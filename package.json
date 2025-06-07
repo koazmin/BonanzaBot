@@ -1,0 +1,16 @@
+{
+  "name": "bavin-myanmar-odoo-assistant",
+  "version": "1.0.0",
+  "description": "Odoo 17 Assistant for Bavin Myanmar powered by Gemini AI.",
+  "main": "api/gemini.js",
+  "scripts": {
+    "start": "node api/gemini.js"
+  },
+  "dependencies": {
+    "@google/generative-ai": "^0.11.0"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "license": "MIT"
+}

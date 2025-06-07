@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="my">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Odoo 17 Assistant (Bavin)</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      background: #121212;
+      margin: 0;
+      padding: 0;
+      color: #ffffff;
+    }
+
+    #chat {
+      width: 95%;
+      max-width: 900px;
+      margin: 20px auto;
+      background: #1e1e1e;
+      padding: 10px;
+      border-radius: 10px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+      /* Added for proper message scrolling and layout */
+      display: flex;
+      flex-direction: column;
+      height: 80vh; /* Adjust as needed for your desired chat box height */
+      overflow: hidden;
+    }
+
+    .message {
+      margin: 10px 0;
+      padding: 10px 12px;
+      border-radius: 5px;
+      line-height: 1.6;
+    }
+
+    .user {
+      background-color: #2c2f3a;
+      color: #ffffff;
+      text-align: right;
+    }
+
+    .bot {
+      background-color: #2a332a;
+      color: #ffffff;
+      text-align: left;
+    }
+
+    input, button {
+      font-size: 16px;
+      padding: 10px;
+      margin-top: 10px;
+      width: 100%;
+      box-sizing: border-box;
+      background-color: #2a2a2a;
+      color: #ffffff;
+      border: 1px solid #444;
+    }
+
+    input::placeholder {
+      color: #cccccc;
+    }
+
+    button {
+      background-color: #388e3c;
+      color: #ffffff;
+      border: none;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #2e7d32;
+    }
+
+    #logo-container {
+      text-align: center;
+      padding: 15px 0;
+      background-color: #121212;
+    }
+
+    #logo-container img {
+      max-height: 60px;
+    }
+
+    #subtitle {
+      font-size: 20px;
+      color: #cccccc;
+      margin-top: 5px;
+    }
+
+    .footer {
+      text-align: center;
+      margin-top: 10px;
+      color: #bbbbbb;
+      font-size: 14px;
+    }
+
+    /* Styles for the scrollable messages area */
+    #messages {
+      flex-grow: 1; /* Allows the messages div to expand and fill available space */
+      overflow-y: auto; /* Enables vertical scrolling when content overflows */
+      padding: 0 10px; /* Add some horizontal padding for messages */
+    }
+  </style>
+</head>
+<body>
+
+  <div id="logo-container">
+    <img src="logo.png" alt="Logo" />
+    <div id="subtitle">Bavin Odoo Assistant</div>
+  </div>
+
+  <div id="chat">
+    <div id="messages"></div> 
+    <input id="userInput" type="text" placeholder="မေးခွန်းရေးပါ..." />
+    <button onclick="sendMessage()">မေးမယ်</button>
+    
+    <div class="footer">Created by AZM</div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
