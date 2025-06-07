@@ -10,7 +10,7 @@ const sendButton = document.querySelector('button'); // Selects the first button
 let clientConversationHistory = [];
 
 // Initial bot welcome message (displayed client-side for immediate feedback)
-const welcomeMessage = "✨မင်္ဂလာပါခင်ဗျာ။ ကျွန်တော်က မိတ်ဆွေတို့ကို ကူညီမယ့် Bavin Myanmar ရဲ့ Odoo 17 Assistant ဖြစ်ပါတယ်။ Odoo 17 ERP အကြောင်းသိချင်တာမေးလို့ရပါတယ်။";
+const welcomeMessage = "✨မင်္ဂလာပါခင်ဗျာ။ ကျွန်တော်က မိတ်ဆွေတို့ကို ကူညီမယ့် Bonanza E-reader Store ရဲ့ Assistant ဖြစ်ပါတယ်။ သိချင်တာမေးလို့ရပါတယ်။";
 
 async function sendMessage() {
   const question = userInput.value.trim();
