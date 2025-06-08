@@ -105,7 +105,7 @@ Example User Prompts:
 
     fullContents.push({ role: "model", parts: [{ text: reply }] });
 
-    res.status(200).json({ reply, updatedHistory: fullContents, model: "gemini-2.5-flash" });
+    res.status(200).json({ reply, updatedHistory: fullContents, model: "gemini-2.0-flash" });
 
   } catch (error) {
     console.error("Error in gemini.js handler:", error);
