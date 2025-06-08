@@ -88,6 +88,16 @@ Example User Prompts:
             maxOutputTokens: 2000,
             temperature: 0.7,
           },
+          // --- START OF ADDITION FOR SEARCH GROUNDING ---
+          tools: [
+            {
+              // This structure tells Gemini that it can use Google Search.
+              // The `googleSearch` object is intentionally empty, indicating
+              // a generic web search capability.
+              googleSearch: {} 
+            }
+          ]
+          // --- END OF ADDITION FOR SEARCH GROUNDING ---
         })
       }
     );
@@ -100,6 +110,10 @@ Example User Prompts:
 
     const data = await response.json();
     const reply = data?.candidates?.[0]?.content?.parts?.[0]?.text || "မဖြေပေးနိုင်ပါ။";
+
+    // You might also want to extract and display search sources if available
+    // data.promptFeedback?.groundingMetadata?.web?.uri for specific sources
+    // or data.groundingMetadata for broader grounding info.
 
     fullContents.push({ role: "model", parts: [{ text: reply }] });
 
