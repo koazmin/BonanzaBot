@@ -1,6 +1,5 @@
-// api/gemini.js
 export default async function handler(req, res) {
-  const { question, history } = req.body; // Expecting 'history' from the client now
+  const { question, history } = req.body;
   const API_KEY = process.env.GEMINI_API_KEY;
 
   if (!API_KEY) {
@@ -8,7 +7,6 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: "Server configuration error: API Key is missing." });
   }
 
-  // Define the SYSTEM_PROMPT here, as it's part of the conversation history for Gemini
   const SYSTEM_PROMPT = `မင်္ဂလာပါ။ Bonanza အတွက် ကူညီပေးမယ့် Assistant ဖြစ်ပါတယ်။
 
 Role:
@@ -24,8 +22,6 @@ Tone:
 Use a knowledgeable, expert-friendly, and sales-focused tone. Be warm, clear, and trustworthy when helping Burmese-speaking customers explore or buy Boox products.
 
 Capabilities:
-
-
 
 Answer product comparisons, tech specs, Boox OS features, and accessory recommendations.
 
@@ -49,13 +45,11 @@ If the user asks for the exact exchange rate, respond:
 
 Important Instructions:
 
-
-
 Only talk about Boox brand e-readers. Never mention or compare with other brands like Kindle or Kobo.
 
 If asked to compare with another brand, politely prefer Boox by saying something like:
 
-“ကျွန်တော်က Boox product တွေမှာသာအထူးပြုလေ့ကျင့်ထားတာဖြစ်လို့ တခြား brand တွေနဲ့မသက်ဆိုင်တဲ့ comparison တွေတော့ မလုပ်ပေးနိုင်ပါဘူးခင်ဗျ။ ဒါပေမယ့် Boox ဟာ မြန်မာ့စျေးကွက်မှာ အသုံးပြုရလွယ်ကူပြီး စိတ်တိုင်းကျစေရမယ်လို့ အာမခံနိုင်ပါတယ်။
+“ကျွန်တော်က Boox product တွေမှာသာအထူးပြုလေ့ကျင့်ထားတာဖြစ်လို့ တခြား brand တွေနဲ့မသက်ဆိုင်တဲ့ comparison တွေတော့ မလုပ်ပေးနိုင်ပါဘူးခင်ဗျ။ ဒါပေမယ့် Boox ဟာ မြန်မာ့စျေးကွက်မှာ အသုံးပြုရလွယ်ကူပြီး စိတ်တိုင်းကျစေရမယ်လို့ အာမခံနိုင်ပါတယ်။”
 
 If the question is not related to e-readers, respond:
 
@@ -74,33 +68,27 @@ Example User Prompts:
 "Boox Note Air2 Plus ရဲ့ battery မကြာခဏပြတ်နေတယ်။ ဘယ်လိုပြဿနာဖြေရှင်းမလဲ?"`;
 
   try {
-    // Construct the full conversation history to send to Gemini
-    // Start with the system prompt as the first user message for context
     let fullContents = [
       { role: "user", parts: [{ text: SYSTEM_PROMPT }] }
     ];
 
-    // Append the existing history from the client
     if (history && Array.isArray(history)) {
-      // Ensure the client-provided history doesn't accidentally include the system prompt itself
       const filteredHistory = history.filter(msg => msg.parts?.[0]?.text !== SYSTEM_PROMPT);
       fullContents = fullContents.concat(filteredHistory);
     }
 
-    // Add the current user question to the end of the history
     fullContents.push({ role: "user", parts: [{ text: question }] });
 
-    // Make the request to Gemini API
     const response = await fetch(
-      "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=" + API_KEY, // Changed model to gemini-1.5-flash for better context handling
+      "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=" + API_KEY,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          contents: fullContents, // Send the full conversation history
+          contents: fullContents,
           generationConfig: {
-            maxOutputTokens: 2000, // Increased for more complete answers
-            temperature: 0.7,      // Added for potentially more varied and complete answers
+            maxOutputTokens: 2000,
+            temperature: 0.7,
           },
         })
       }
@@ -115,11 +103,9 @@ Example User Prompts:
     const data = await response.json();
     const reply = data?.candidates?.[0]?.content?.parts?.[0]?.text || "မဖြေပေးနိုင်ပါ။";
 
-    // Add the bot's reply to the history before sending it back
     fullContents.push({ role: "model", parts: [{ text: reply }] });
 
-    // Send back the reply and the updated full history
-    res.status(200).json({ reply, updatedHistory: fullContents });
+    res.status(200).json({ reply, updatedHistory: fullContents, model: "gemini-2.5-flash" });
 
   } catch (error) {
     console.error("Error in gemini.js handler:", error);
