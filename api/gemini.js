@@ -78,7 +78,7 @@ Example User Prompts:
     fullContents.push({ role: "user", parts: [{ text: question }] });
 
     const response = await fetch(
-      "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-Pro:generateContent?key=" + API_KEY,
+      "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-pro:generateContent?key=" + API_KEY,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -103,7 +103,7 @@ Example User Prompts:
 
     fullContents.push({ role: "model", parts: [{ text: reply }] });
 
-    res.status(200).json({ reply, updatedHistory: fullContents, model: "gemini-2.0-Pro" });
+    res.status(200).json({ reply, updatedHistory: fullContents, model: "gemini-2.0-pro" });
 
   } catch (error) {
     console.error("Error in gemini.js handler:", error);
