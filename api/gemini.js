@@ -31,32 +31,32 @@ Provide personalized product recommendations based on use cases (e.g. reading, n
 Clearly explain troubleshooting for common issues (e.g. battery problems, sync issues, stylus not working).
 
 Share latest news and product launches from Boox.
-include the product link when referring to any product using from this website: https://www.shop.boox.com
+Include the product link when referring to any product using from this website: https://www.shop.boox.com
 
 Use this for store info: "ရန်ကင်းစင်တာ ပထမထပ်မှာ ဖွင့်ထားပါတယ်။ လောလောဆယ်တော့ အခက်အခဲတချို့ရှိလို့ ခဏပိတ်ထားပါတယ်။ ပြန်ဖွင့်မယ့်ရက်ကို Facebook page မှာကြေငြာပါ့မယ်"
 Contact for Bonanza- https://www.facebook.com/BonanzaEreaderStore , website-bonanza.com.mm, phone: 09954454499
 
 Price Guidelines:
-Provide in-stock product prices using below data.if user asks other device's price, please check if it is a boox product on shop.boox.com and request user to pre-order, waiting time-about 1.5 months.
-Go-6- 160 USD,Go color 7 Gen II-326 USD,Go 10.3-410 USD,Note Air 4C-530 USD, Tab Ultra C Pro-600 USD, Note Max-690 USD
+Provide in-stock product prices using below data. If user asks other device's price, please check if it is a boox product on shop.boox.com and request user to pre-order, waiting time-about 1.5 months.
+Go-6- 160 USD, Go color 7 Gen II-326 USD, Go 10.3-410 USD, Note Air 4C-530 USD, Tab Ultra C Pro-600 USD, Note Max-690 USD
 If the user asks for the exact exchange rate, respond:
 “ဈေးနှုန်းတွေကို Boox ရဲ့ တရားဝင်ဝက်ဘ်ဆိုဒ်မှာပါရှိတဲ့ USD ဈေးနှုန်းအတိုင်း ဝယ်ယူနိုင်ပါ တယ်။ လက်ရှိ စျေးကွက်ငွေလဲနှုန်းနဲ့ ပြန်တွက်ပေးမှာဖြစ်ပါတယ်ခင်ဗျ။”
 “လက်ရှိငွေလဲနှုန်း ကိုသိချင်တယ်ဆိုရင်တော့ ကျေးဇူးပြုပြီး 09954454499 ကိုဖုန်းဆက်မေးမြန်းပေးပါခင်ဗျ။”
-Use Magnetic Cover/Case prices below if user asks
-Go-6- 90000 MMK (Boox Unified price-$39.99),Go color 7 Gen II-90000 MMK (Boox Unified price-$39.99),Go 10.3-150,000 MMK (Boox Unified price-$50.99),Note Air 4C-150,000 MMK (Boox Unified price-$50.99), Tab Ultra C Pro-150,000 MMK (Boox Unified price-$50.99), Note Max-150,000 MMK (Boox Unified price-$50.99)
+Use Magnetic Cover/Case prices below if user asks:
+Go-6- 90000 MMK (Boox Unified price-$39.99), Go color 7 Gen II-90000 MMK (Boox Unified price-$39.99), Go 10.3-150,000 MMK (Boox Unified price-$50.99), Note Air 4C-150,000 MMK (Boox Unified price-$50.99), Tab Ultra C Pro-150,000 MMK (Boox Unified price-$50.99), Note Max-150,000 MMK (Boox Unified price-$50.99)
 
 Use this for user's query
-1:Warranty- Boox ရဲ့ international warranty 1 year ပါဝင်ပါတယ်။ 
-2:Delivery- free country-wide delivery for all e-readers 
-3:payment method - For yangon-(Kbz,kpay,CB,AYA,AYA pay) and COD is ok. other places payment with Mobile banking (Kbz,kpay,CB,AYA,AYA pay) 
-4:မြန်မာစာအုပ် pdf တွေဖတ်လို့ရလား - Boox android ereader တွေဟာ pdf ဖိုင်တွေဖတ်ဖို့အကောင်းဆုံးပါပဲ။ စာလုံးတွေကို reflow/rearrange လုပ်တာ၊ Margin တွေကိုလိုသလို အတိုးအလျော့လုပ်ပြီးဖြတ်ဖတ်တာ၊ မြန်မာဖောင့်အစုံထည့်ဖတ်တာ၊ scan ဖတ်ထားတဲ့ pdf တွေကို လိုသလို ပိုင်းဖတ်တာတွေလုပ်နိုင်ပါတယ်။ quality မကောင်းတဲ့ scanned pdf တွေကိုတောင် ကောင်းကင် handle လုပ်ပြီး ဖတ်နိုင်ပါတယ်။ 
+1: Warranty - Boox ရဲ့ international warranty 1 year ပါဝင်ပါတယ်။
+2: Delivery - free country-wide delivery for all e-readers
+3: Payment method - For Yangon (Kbz, kpay, CB, AYA, AYA pay) and COD is ok. Other places payment with Mobile banking (Kbz, kpay, CB, AYA, AYA pay)
+4: မြန်မာစာအုပ် pdf တွေဖတ်လို့ရလား - Boox android ereader တွေဟာ pdf ဖိုင်တွေဖတ်ဖို့အကောင်းဆုံးပါပဲ။ စာလုံးတွေကို reflow/rearrange လုပ်တာ၊ Margin တွေကိုလိုသလို အတိုးအလျော့လုပ်ပြီးဖြတ်ဖတ်တာ၊ မြန်မာဖောင့်အစုံထည့်ဖတ်တာ၊ scan ဖတ်ထားတဲ့ pdf တွေကို လိုသလို ပိုင်းဖတ်တာတွေလုပ်နိုင်ပါတယ်။ quality မကောင်းတဲ့ scanned pdf တွေကိုတောင် ကောင်းကင် handle လုပ်ပြီး ဖတ်နိုင်ပါတယ်။
 စမ်းပြထားတဲ့ video link 
 "https://www.facebook.com/bonanzagadgetsstore/videos/309933138150362"
 
 Important Instructions:
 
 Only talk about Boox brand e-readers.
-If asked to compare with another brand, politely prefer Boox 
+If asked to compare with another brand, politely prefer Boox.
 If the question is not related to e-readers, respond:
 “ကျွန်တော်က Bonanza E-Reader Store ရဲ့ customer တွေကို e-reader တွေနဲ့ပက်သက်ပြီး ကူညီဖို့ပဲလေ့ကျင့်ထားတာဖြစ်လို့ တခြားမေးခွန်းတွေ မဖြေနိုင်ပါဘူးခင်ဗျာ။”
 
@@ -65,7 +65,7 @@ Example User Prompts:
 "Boox Note Air3 C နဲ့ Tab Ultra C ရဲ့ မတူတဲ့အချက်တွေ ဘာလဲ?"
 "Boox သုံးပြီး manga ဖတ်ဖို့အတွက် ဘယ် model ကအကောင်းဆုံးလဲ?"
 "Boox e-reader များအတွက် အခုနောက်ဆုံးထွက်လာတဲ့ model တွေရှိလား?"
-"Boox Note Air2 Plus ရဲ့ battery မကြာခဏပြတ်နေတယ်။ ဘယ်လိုပြဿနာဖြေရှင်းမလဲ?"`;
+"Boox Note Air2 Plus ရဲ့ battery မကြာခဏပြတ်နေတယ်။ ဘယ်လိုပြဿနာဖြေရှင်းမလဲ?`
 
   try {
     let fullContents = [
@@ -102,16 +102,10 @@ Example User Prompts:
     }
 
     const data = await response.json();
-
     let reply = data?.candidates?.[0]?.content?.parts?.[0]?.text || "မဖြေပေးနိုင်ပါ။";
 
-    // Convert markdown-style [label](url) to <a> tags
-    reply = reply.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, (match, text, url) => {
-      return `<a href="${url}" target="_blank" style="color:#0066cc;text-decoration:underline;">${text}</a>`;
-    });
-
-    // Convert plain URLs to <a> tags only if NOT already inside <a> tags
-    reply = replaceUrlsOutsideAnchors(reply);
+    // ✅ Remove all <a href="..."></a> and leave only the raw URL text (for Telegram clickable URLs)
+    reply = reply.replace(/<a [^>]*href="([^\"]+)"[^>]*>[^<]*<\/a>/g, '$1');
 
     fullContents.push({ role: "model", parts: [{ text: reply }] });
 
@@ -121,45 +115,4 @@ Example User Prompts:
     console.error("Error in gemini.js handler:", error);
     res.status(500).json({ error: "✨ ဆက်သွယ်မှုမအောင်မြင်ပါ။ ပြန်လည်ကြိုးစားပါ။" });
   }
-}
-
-// Helper function to replace plain URLs only outside <a>...</a> tags
-function replaceUrlsOutsideAnchors(text) {
-  const urlRegex = /(https?:\/\/[^\s<]+)/g;
-  let result = "";
-  let lastIndex = 0;
-
-  // Find all <a ...>...</a> ranges to skip URLs inside them
-  const anchorTagRegex = /<a [^>]*>.*?<\/a>/gi;
-  const anchors = [];
-  let match;
-
-  while ((match = anchorTagRegex.exec(text)) !== null) {
-    anchors.push({ start: match.index, end: anchorTagRegex.lastIndex });
-  }
-
-  // Check if a position is inside any anchor tag range
-  function isInsideAnchors(pos) {
-    return anchors.some(({ start, end }) => pos >= start && pos < end);
-  }
-
-  // Process each URL
-  while ((match = urlRegex.exec(text)) !== null) {
-    const urlStart = match.index;
-    const urlEnd = urlRegex.lastIndex;
-    const url = match[0];
-
-    if (!isInsideAnchors(urlStart)) {
-      // Append text before URL
-      result += text.slice(lastIndex, urlStart);
-      // Replace URL with <a>
-      result += `<a href="${url}" target="_blank" style="color:#0066cc;text-decoration:underline;">${url}</a>`;
-      lastIndex = urlEnd;
-    }
-  }
-
-  // Append remaining text
-  result += text.slice(lastIndex);
-
-  return result;
 }
