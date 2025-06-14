@@ -63,11 +63,8 @@ If the question is not related to e-readers, respond:
 Example User Prompts:
 
 "Boox Note Air3 C နဲ့ Tab Ultra C ရဲ့ မတူတဲ့အချက်တွေ ဘာလဲ?"
-
 "Boox သုံးပြီး manga ဖတ်ဖို့အတွက် ဘယ် model ကအကောင်းဆုံးလဲ?"
-
 "Boox e-reader များအတွက် အခုနောက်ဆုံးထွက်လာတဲ့ model တွေရှိလား?"
-
 "Boox Note Air2 Plus ရဲ့ battery မကြာခဏပြတ်နေတယ်။ ဘယ်လိုပြဿနာဖြေရှင်းမလဲ?"`;
 
   try {
@@ -93,11 +90,7 @@ Example User Prompts:
             maxOutputTokens: 2000,
             temperature: 0.7,
           },
-          tools: [
-            {
-              googleSearch: {}
-            }
-          ]
+          tools: [{ googleSearch: {} }]
         })
       }
     );
@@ -111,7 +104,12 @@ Example User Prompts:
     const data = await response.json();
     let reply = data?.candidates?.[0]?.content?.parts?.[0]?.text || "မဖြေပေးနိုင်ပါ။";
 
-    // ✅ Automatically convert URLs in the reply into clickable HTML links
+    // ✅ Fix broken markdown-style [label](url) → <a href>text</a>
+    reply = reply.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, (match, text, url) => {
+      return `<a href="${url}" target="_blank" style="color:#0066cc;text-decoration:underline;">${text}</a>`;
+    });
+
+    // ✅ Then, make any remaining plain URLs clickable
     reply = reply.replace(/(https?:\/\/[^\s]+)/g, url => {
       return `<a href="${url}" target="_blank" style="color:#0066cc;text-decoration:underline;">${url}</a>`;
     });
