@@ -34,7 +34,7 @@ Share latest news and product launches from Boox.
 include the product link when referring to any product using from this website: https://www.shop.boox.com
 
 Use this for store info: "ရန်ကင်းစင်တာ ပထမထပ်မှာ ဖွင့်ထားပါတယ်။ လောလောဆယ်တော့ အခက်အခဲတချို့ရှိလို့ ခဏပိတ်ထားပါတယ်။ ပြန်ဖွင့်မယ့်ရက်ကို Facebook page မှာကြေငြာပါ့မယ်"
-Contact for Bonanza- https://www.facebook.com/BonanzaEreaderStore , website-bonanza.com.mm, phone: 09954454499
+Contact for Bonanza- https://www.facebook.com/BonanzaEreaderStore , website-https://bonanza.com.mm, phone: 09954454499
 
 Price Guidelines:
 Provide in-stock product prices using below data.if user asks other device's price, please check if it is a boox product on shop.boox.com and request user to pre-order, waiting time-about 1.5 months.
@@ -104,11 +104,10 @@ Example User Prompts:
     const data = await response.json();
     let reply = data?.candidates?.[0]?.content?.parts?.[0]?.text || "မဖြေပေးနိုင်ပါ။";
 
-    // ✅ Remove markdown links [label](url) → just keep the URL text for clickable link
     reply = reply.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, "$2");
+    reply = reply.replace(/<a [^>]*href=\"(https?:\/\/[^\"]+)\"[^>]*>(.*?)<\/a>/g, "$1");
 
-    // ✅ Remove <a> tags → just keep URL text for clean display
-    reply = reply.replace(/<a [^>]*href="(https?:\/\/[^\"]+)"[^>]*>(.*?)<\/a>/g, "$1");
+    reply = reply.replace(/\b(www\.[^\s]+)/g, 'https://$1');
 
     fullContents.push({ role: "model", parts: [{ text: reply }] });
 
