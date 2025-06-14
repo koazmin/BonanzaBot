@@ -73,6 +73,7 @@ Example User Prompts:
     ];
 
     if (history && Array.isArray(history)) {
+      // filter out previous system prompt duplicates
       const filteredHistory = history.filter(msg => msg.parts?.[0]?.text !== SYSTEM_PROMPT);
       fullContents = fullContents.concat(filteredHistory);
     }
@@ -102,15 +103,16 @@ Example User Prompts:
     }
 
     const data = await response.json();
+
     let reply = data?.candidates?.[0]?.content?.parts?.[0]?.text || "မဖြေပေးနိုင်ပါ။";
 
-    // ✅ Fix broken markdown-style [label](url) → <a href>text</a>
+    // Fix broken markdown-style [label](url) → <a href>text</a>
     reply = reply.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, (match, text, url) => {
       return `<a href="${url}" target="_blank" style="color:#0066cc;text-decoration:underline;">${text}</a>`;
     });
 
-    // ✅ Then, make any remaining plain URLs clickable
-    reply = reply.replace(/(https?:\/\/[^\s]+)/g, url => {
+    // Fix plain URLs but skip URLs already inside href attributes (to avoid nested links)
+    reply = reply.replace(/(?<!href=")(https?:\/\/[^\s<]+)/g, url => {
       return `<a href="${url}" target="_blank" style="color:#0066cc;text-decoration:underline;">${url}</a>`;
     });
 
