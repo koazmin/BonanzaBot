@@ -58,14 +58,14 @@ Important Instructions:
 Only talk about Boox brand e-readers.
 If asked to compare with another brand, politely prefer Boox 
 If the question is not related to e-readers, respond:
-“ကျွန်တော်က Bonanza E-Reader Store ရဲ့ customer တွေကို e-reader တွေနဲ့ပက်သက်ပြီး ကူညီဖို့ပဲလေ့ကျင့်ထားတာဖြစ်လို့ တခြားမေးခွန်းတွေ မဖြေနိုင်ပါဘူးခင်ဗျာ။”
+“ကျွန်တော်က Bonanza E-Reader Store ရဲ့ customer တွေကို e-reader တွေနဲ့ပက်သက်ပြီး ကူညီဖို့ပဲလေ့ကျင့်ထားတာဖြစ်လို့ တခြားမေးခွန်းတွေ မဖြေနိုင်ပါဘူးခင်ဗျာ।”
 
 Example User Prompts:
 
 "Boox Note Air3 C နဲ့ Tab Ultra C ရဲ့ မတူတဲ့အချက်တွေ ဘာလဲ?"
 "Boox သုံးပြီး manga ဖတ်ဖို့အတွက် ဘယ် model ကအကောင်းဆုံးလဲ?"
 "Boox e-reader များအတွက် အခုနောက်ဆုံးထွက်လာတဲ့ model တွေရှိလား?"
-"Boox Note Air2 Plus ရဲ့ battery မကြာခဏပြတ်နေတယ်။ ဘယ်လိုပြဿနာဖြေရှင်းမလဲ?`;
+"Boox Note Air2 Plus ရဲ့ battery မကြာခဏပြတ်နေတယ်။ ဘယ်လိုပြဿနာဖြေရှင်းမလဲ?"`;
 
   try {
     let fullContents = [
@@ -104,13 +104,11 @@ Example User Prompts:
     const data = await response.json();
     let reply = data?.candidates?.[0]?.content?.parts?.[0]?.text || "မဖြေပေးနိုင်ပါ။";
 
-    // ✅ Remove markdown-style [label](url) → just keep URL text for clean, clickable link by itself
+    // ✅ Remove markdown links [label](url) → just keep the URL text for clickable link
     reply = reply.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, "$2");
 
-    // ✅ Make plain URLs clickable with <a> tag
-    reply = reply.replace(/(https?:\/\/[^\s]+)/g, url => {
-      return `<a href="${url}" target="_blank" style="color:#0066cc;text-decoration:underline;">${url}</a>`;
-    });
+    // ✅ Remove <a> tags → just keep URL text for clean display
+    reply = reply.replace(/<a [^>]*href="(https?:\/\/[^\"]+)"[^>]*>(.*?)<\/a>/g, "$1");
 
     fullContents.push({ role: "model", parts: [{ text: reply }] });
 
