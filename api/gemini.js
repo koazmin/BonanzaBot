@@ -49,7 +49,7 @@ Use this for user's query
 1:Warranty- Boox ရဲ့ international warranty 1 year ပါဝင်ပါတယ်။ 
 2:Delivery- free country-wide delivery for all e-readers 
 3:payment method - For yangon-(Kbz,kpay,CB,AYA,AYA pay) and COD is ok. other places payment with Mobile banking (Kbz,kpay,CB,AYA,AYA pay) 
-4:မြန်မာစာအုပ် pdf တွေဖတ်လို့ရလား - Boox android ereader တွေဟာ pdf ဖိုင်တွေဖတ်ဖို့အကောင်းဆုံးပါပဲ။ စာလုံးတွေကို reflow/rearrange လုပ်တာ၊ Margin တွေကိုလိုသလို အတိုးအလျော့လုပ်ပြီးဖြတ်ဖတ်တာ၊ မြန်မာဖောင့်အစုံထည့်ဖတ်တာ၊ scan ဖတ်ထားတဲ့ pdf တွေကို လိုသလို ပိုင်းဖတ်တာတွေလုပ်နိုင်ပါတယ်။ quality မကောင်းတဲ့ scanned pdf တွေကိုတောင် ကောင်းကင် handle လုပ်ပြီး ဖတ်နိုင်ပါတယ်။
+4:မြန်မာစာအုပ် pdf တွေဖတ်လို့ရလား - Boox android ereader တွေဟာ pdf ဖိုင်တွေဖတ်ဖို့အကောင်းဆုံးပါပဲ။ စာလုံးတွေကို reflow/rearrange လုပ်တာ၊ Margin တွေကိုလိုသလို အတိုးအလျော့လုပ်ပြီးဖြတ်ဖတ်တာ၊ မြန်မာဖောင့်အစုံထည့်ဖတ်တာ၊ scan ဖတ်ထားတဲ့ pdf တွေကို လိုသလို ပိုင်းဖတ်တာတွေလုပ်နိုင်ပါတယ်။ quality မကောင်းတဲ့ scanned pdf တွေကိုတောင် ကောင်းကင် handle လုပ်ပြီး ဖတ်နိုင်ပါတယ်။ 
 စမ်းပြထားတဲ့ video link 
 "https://www.facebook.com/bonanzagadgetsstore/videos/309933138150362"
 
@@ -73,7 +73,6 @@ Example User Prompts:
     ];
 
     if (history && Array.isArray(history)) {
-      // filter out previous system prompt duplicates
       const filteredHistory = history.filter(msg => msg.parts?.[0]?.text !== SYSTEM_PROMPT);
       fullContents = fullContents.concat(filteredHistory);
     }
@@ -106,15 +105,13 @@ Example User Prompts:
 
     let reply = data?.candidates?.[0]?.content?.parts?.[0]?.text || "မဖြေပေးနိုင်ပါ။";
 
-    // Fix broken markdown-style [label](url) → <a href>text</a>
+    // Convert markdown-style [label](url) to <a> tags
     reply = reply.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, (match, text, url) => {
       return `<a href="${url}" target="_blank" style="color:#0066cc;text-decoration:underline;">${text}</a>`;
     });
 
-    // Fix plain URLs but skip URLs already inside href attributes (to avoid nested links)
-    reply = reply.replace(/(?<!href=")(https?:\/\/[^\s<]+)/g, url => {
-      return `<a href="${url}" target="_blank" style="color:#0066cc;text-decoration:underline;">${url}</a>`;
-    });
+    // Convert plain URLs to <a> tags only if NOT already inside <a> tags
+    reply = replaceUrlsOutsideAnchors(reply);
 
     fullContents.push({ role: "model", parts: [{ text: reply }] });
 
@@ -124,4 +121,45 @@ Example User Prompts:
     console.error("Error in gemini.js handler:", error);
     res.status(500).json({ error: "✨ ဆက်သွယ်မှုမအောင်မြင်ပါ။ ပြန်လည်ကြိုးစားပါ။" });
   }
+}
+
+// Helper function to replace plain URLs only outside <a>...</a> tags
+function replaceUrlsOutsideAnchors(text) {
+  const urlRegex = /(https?:\/\/[^\s<]+)/g;
+  let result = "";
+  let lastIndex = 0;
+
+  // Find all <a ...>...</a> ranges to skip URLs inside them
+  const anchorTagRegex = /<a [^>]*>.*?<\/a>/gi;
+  const anchors = [];
+  let match;
+
+  while ((match = anchorTagRegex.exec(text)) !== null) {
+    anchors.push({ start: match.index, end: anchorTagRegex.lastIndex });
+  }
+
+  // Check if a position is inside any anchor tag range
+  function isInsideAnchors(pos) {
+    return anchors.some(({ start, end }) => pos >= start && pos < end);
+  }
+
+  // Process each URL
+  while ((match = urlRegex.exec(text)) !== null) {
+    const urlStart = match.index;
+    const urlEnd = urlRegex.lastIndex;
+    const url = match[0];
+
+    if (!isInsideAnchors(urlStart)) {
+      // Append text before URL
+      result += text.slice(lastIndex, urlStart);
+      // Replace URL with <a>
+      result += `<a href="${url}" target="_blank" style="color:#0066cc;text-decoration:underline;">${url}</a>`;
+      lastIndex = urlEnd;
+    }
+  }
+
+  // Append remaining text
+  result += text.slice(lastIndex);
+
+  return result;
 }
