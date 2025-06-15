@@ -11,26 +11,25 @@ export default async function handler(req, res) {
   }
 
   try {
-    const credentials = JSON.parse(process.env.GOOGLE_SERVICE_ACCOUNT_JSON);
+    const client_email = process.env.GOOGLE_CLIENT_EMAIL;
+    const private_key = process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n');
     const spreadsheetId = process.env.SPREADSHEET_ID;
 
-    if (!spreadsheetId) {
-      console.error('❗ SPREADSHEET_ID is missing.');
-      return res.status(500).json({ error: 'Server configuration error: Missing Spreadsheet ID.' });
+    if (!spreadsheetId || !client_email || !private_key) {
+      console.error('❗ Missing env variables.');
+      return res.status(500).json({ error: 'Server configuration error: Missing Spreadsheet ID or Service Account credentials.' });
     }
 
     const auth = new google.auth.GoogleAuth({
-      credentials,
+      credentials: {
+        client_email,
+        private_key,
+      },
       scopes: ['https://www.googleapis.com/auth/spreadsheets'],
     });
 
     const sheets = google.sheets({ version: 'v4', auth });
     const now = new Date().toISOString();
-
-    console.log('➡️ Writing to Spreadsheet:');
-    console.log('Spreadsheet ID:', spreadsheetId);
-    console.log('Sheet Range:', 'Sheet1!A1'); // Change if necessary
-    console.log('Data:', [now, userMessage, botReply]);
 
     const response = await sheets.spreadsheets.values.append({
       spreadsheetId,
@@ -41,7 +40,6 @@ export default async function handler(req, res) {
       },
     });
 
-    console.log('✅ Google Sheets Response:', response.data);
     return res.status(200).json({ message: 'Chat saved successfully', result: response.data });
   } catch (error) {
     console.error('❗ Google Sheets API Error:', error);
