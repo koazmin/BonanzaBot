@@ -45,7 +45,7 @@ Use this for user's query
 2. Delivery: free country-wide delivery for all e-readers
 3. payment method: For yangon-(Kbz, kpay, CB, AYA, AYA pay) and COD is ok. other places payment with Mobile banking (Kbz, kpay, CB, AYA, AYA pay)
 4. မြန်မာစာအုပ် pdf တွေဖတ်လို့ရလား: Boox android ereader တွေဟာ pdf ဖိုင်တွေဖတ်ဖို့အကောင်းဆုံးပါပဲ။ စာလုံးတွေကို reflow/rearrange လုပ်တာ၊ Margin တွေကိုလိုသလို အတိုးအလျော့လုပ်ပြီးဖြတ်ဖတ်တာ၊ မြန်မာဖောင့်အစုံထည့်ဖတ်တာ၊ scan ဖတ်ထားတဲ့ pdf တွေကို လိုသလို ပိုင်းဖတ်တာတွေလုပ်နိုင်ပါတယ်။ quality မကောင်းတဲ့ scanned pdf တွေကိုတောင် ကောင်းကင် handle လုပ်ပြီး ဖတ်နိုင်ပါတယ်။
-စမ်းပြထားတဲ့ video link 
+စမ်းပြထားတဲ့ video link
 https://www.facebook.com/bonanzagadgetsstore/videos/309933138150362
 5. ereader ဝယ်ရင် မြန်မာစာအုပ်နဲ့ဖောင့်တွေ တခြားလိုတာတွေထည့်ပေးလား: ဟုတ်ကဲ့ ထည့်ချင်ရင်ထည့်ပေးပါတယ်။ ကိုယ်တိုင် unboxing လုပ်ပြီးမှထည့်ရင်လည်း လွယ်ပါတယ်ဗျ။ သိချင်တာ ကျွန်တော်တို့ကိုမေးလို့ရပါတယ်။
 
@@ -73,7 +73,7 @@ Example User Prompts:
     fullContents.push({ role: "user", parts: [{ text: question }] });
 
     const response = await fetch(
-      "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=" + API_KEY,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${API_KEY}`, // Using template literal
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
