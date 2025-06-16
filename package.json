@@ -1,7 +1,7 @@
 {
-  "name": "bavin-myanmar-odoo-assistant",
+  "name": "Bonanza-assistant",
   "version": "1.0.0",
-  "description": "Odoo 17 Assistant for Bavin Myanmar powered by Gemini AI.",
+  "description": "Bonanza Assistant powered by Gemini AI.",
   "main": "api/gemini.js",
   "scripts": {
     "start": "node api/gemini.js"
