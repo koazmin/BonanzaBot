@@ -5,17 +5,17 @@ export default function PrivacyPolicy() {
       <p>Effective Date: June 2025</p>
 
       <h2>1. Introduction</h2>
-      <p>This Privacy Policy explains how Bonanza E-Reader Store ("we", "our", or "us") collects, uses, and protects your personal information when you interact with our services.</p>
+      <p>This Privacy Policy explains how Bonanza E-Reader Store collects, uses, and protects your personal information when you interact with our services.</p>
 
       <h2>2. Information We Collect</h2>
       <ul>
-        <li>Information you provide when using our website, Messenger bot, or contacting us.</li>
-        <li>Chat records solely for improving service quality and providing accurate information.</li>
+        <li>Information you provide via our website, Messenger bot, or other contact methods.</li>
+        <li>Chat records solely for improving service quality and accuracy.</li>
       </ul>
 
       <h2>3. How We Use Your Information</h2>
       <ul>
-        <li>To provide you with requested product information and support.</li>
+        <li>To provide you with requested product information and customer support.</li>
         <li>To improve our customer support and offerings.</li>
       </ul>
 
@@ -28,9 +28,8 @@ export default function PrivacyPolicy() {
       <h2>6. Contact Us</h2>
       <p>For any questions or concerns about this policy, please contact us at:</p>
       <ul>
-        <li>📞 Phone: 09954454499</li>
-        <li>🌐 Website: <a href="https://bonanza.com.mm" target="_blank" rel="noopener noreferrer">bonanza.com.mm</a></li>
-        <li>📧 Email: [add your email if you have one]</li>
+        <li>📞 09954454499</li>
+        <li>🌐 <a href="https://bonanza.com.mm" target="_blank" rel="noopener noreferrer">bonanza.com.mm</a></li>
       </ul>
     </main>
   );
