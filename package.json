@@ -1,12 +1,16 @@
 {
-  "name": "Bonanza-assistant",
+  "name": "bonanza-assistant",
   "version": "1.0.0",
   "description": "Bonanza Assistant powered by Gemini AI.",
-  "main": "api/gemini.js",
   "scripts": {
-    "start": "node api/gemini.js"
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start"
   },
   "dependencies": {
+    "next": "^14.1.0",
+    "react": "^18.3.0",
+    "react-dom": "^18.3.0",
     "@google/generative-ai": "^0.11.0",
     "googleapis": "^121.0.0",
     "@notionhq/client": "^2.2.14"
