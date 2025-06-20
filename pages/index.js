@@ -2,10 +2,17 @@ import Head from 'next/head';
 import Image from 'next/image';
 import { useState, useEffect, useRef } from 'react';
 
+const WELCOME_MESSAGE = "✨မင်္ဂလာပါခင်ဗျာ။ ကျွန်တော်က မိတ်ဆွေတို့ကို ကူညီမယ့် Bonanza E-reader Store ရဲ့ Assistant ဖြစ်ပါတယ်။ သိချင်တာမေးလို့ရပါတယ်။";
+
 export default function Home() {
   const [messages, setMessages] = useState([]);
   const [userInput, setUserInput] = useState('');
   const messagesEndRef = useRef(null);
+  const clientConversationHistoryRef = useRef([]);
+
+  useEffect(() => {
+    restoreChatHistory();
+  }, []);
 
   useEffect(() => {
     scrollToBottom();
@@ -15,46 +22,105 @@ export default function Home() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  const sendMessage = async () => {
-    if (!userInput.trim()) return;
+  const escapeHtml = (text) => {
+    const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
+    return text.replace(/[&<>"']/g, (m) => map[m]);
+  };
 
-    const newMessages = [...messages, { sender: 'user', text: userInput }];
+  const restoreChatHistory = () => {
+    try {
+      const stored = localStorage.getItem('chatHistory');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        clientConversationHistoryRef.current = parsed;
+        const displayable = parsed.filter(msg =>
+          msg.role !== 'user' || (msg.role === 'user' && msg.parts?.[0]?.text !== 'SYSTEM_PROMPT_FROM_SERVER')
+        );
+        if (displayable.length > 0) {
+          const restoredMessages = displayable.map((msg) => ({
+            sender: msg.role,
+            text: msg.parts?.[0]?.text || '',
+          }));
+          setMessages(restoredMessages);
+          return;
+        }
+      }
+    } catch (err) {
+      console.error('Failed to restore chat history:', err);
+    }
+    setMessages([{ sender: 'bot', text: WELCOME_MESSAGE }]);
+  };
+
+  const sendMessage = async () => {
+    const question = userInput.trim();
+    if (!question) return;
+
+    const newMessages = [...messages, { sender: 'user', text: question }];
     setMessages(newMessages);
     setUserInput('');
 
-    // Typing indicator (optional: remove if not needed)
     const typingIndicator = { sender: 'bot', text: 'မေးခွန်းကိုဖြေဖို့ကြိုးစားနေပါတယ်...' };
     setMessages([...newMessages, typingIndicator]);
 
     try {
-      const response = await fetch('/api/gemini', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ question: userInput })
+      const response = await fetch("/api/gemini", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ question, history: clientConversationHistoryRef.current })
       });
 
-      const data = await response.json();
-      const reply = data.reply || '✨ မဖြေပေးနိုင်ပါ။';
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: response.statusText }));
+        throw new Error(errorData.error || `API Error: ${response.status}`);
+      }
 
-      // Remove typing indicator before showing real reply
-      setMessages(newMessages);
-      await typeReply(reply);
+      const data = await response.json();
+      const reply = data.reply || "✨ မဖြေပေးနိုင်ပါ။";
+
+      if (data.updatedHistory && Array.isArray(data.updatedHistory)) {
+        clientConversationHistoryRef.current = data.updatedHistory;
+        localStorage.setItem('chatHistory', JSON.stringify(clientConversationHistoryRef.current));
+      }
+
+      await animateBotReply(reply);
+
+      // ✅ Save this chat to Notion via /api/saveChat
+      await saveChatToGoogleSheet(question, reply);
+
     } catch (error) {
-      setMessages([...newMessages, { sender: 'bot', text: `✨ ဆက်သွယ်မှုမအောင်မြင်ပါ။ (${error.message})` }]);
+      animateBotReply(`✨ ဆက်သွယ်မှုမအောင်မြင်ပါ။ ပြန်လည်ကြိုးစားပါ။ (${error.message})`);
+      console.error("Error:", error);
     }
   };
 
-  const typeReply = async (text) => {
-    const typingSpeed = 30; // milliseconds per character
+  const saveChatToGoogleSheet = async (userMessage, botReply) => {
+    try {
+      const response = await fetch("/api/saveChat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userMessage, botReply })
+      });
+      const data = await response.json();
+      console.log("✅ Chat log saved:", data);
+    } catch (error) {
+      console.error("❗ Error saving chat to Notion:", error);
+    }
+  };
+
+  const animateBotReply = async (text) => {
+    const typingSpeed = 4; // milliseconds per character for fast animation
+    const prefix = "✨ ";
     let displayedText = '';
+
+    // Start with prefix
+    setMessages(prev => [...prev.slice(0, -1), { sender: 'bot', text: prefix }]);
+
     for (let i = 0; i < text.length; i++) {
       displayedText += text[i];
-      setMessages((prev) => [...prev.slice(0, -1), { sender: 'bot', text: displayedText }]);
-      await new Promise((resolve) => setTimeout(resolve, typingSpeed));
+      setMessages(prev => [...prev.slice(0, -1), { sender: 'bot', text: prefix + displayedText }]);
+      await new Promise(resolve => setTimeout(resolve, typingSpeed));
       scrollToBottom();
     }
-    // Final message (fully typed)
-    setMessages((prev) => [...prev.slice(0, -1), { sender: 'bot', text }]);
   };
 
   const handleKeyDown = (e) => {
@@ -78,7 +144,6 @@ export default function Home() {
             padding: 0;
             color: #ffffff;
           }
-
           #chat {
             width: 95%;
             max-width: 1100px;
@@ -92,27 +157,24 @@ export default function Home() {
             height: 80vh;
             overflow: hidden;
           }
-
           .message {
             margin: 10px 0;
             padding: 10px 12px;
             border-radius: 5px;
             line-height: 1.6;
             animation: slideIn 0.4s ease-out;
+            word-break: break-word;
           }
-
           .user {
             background-color: #2f003a;
             color: #ffffff;
             text-align: right;
           }
-
           .bot {
             background-color: #25002f;
             color: #ffffff;
             text-align: left;
           }
-
           input, button {
             font-size: 16px;
             padding: 10px;
@@ -123,11 +185,9 @@ export default function Home() {
             color: #ffffff;
             border: 1px solid #555;
           }
-
           input::placeholder {
             color: #cccccc;
           }
-
           button {
             background-color: #8f2ac3;
             color: #ffffff;
@@ -135,44 +195,37 @@ export default function Home() {
             cursor: pointer;
             transition: background-color 0.3s, box-shadow 0.3s;
           }
-
           button:hover {
             background-color: #7a24a6;
             box-shadow: 0 0 10px #8f2ac3;
           }
-
           #logo-container {
             text-align: center;
             padding: 5px 0;
             background-color: #121212;
             animation: fadeIn 1s ease-in;
           }
-
           #subtitle {
             font-size: 15px;
             color: #cccccc;
             margin-top: 2px;
             animation: fadeIn 1.5s ease-in-out;
           }
-
           #messages {
             flex-grow: 1;
             overflow-y: auto;
             padding: 0 10px;
           }
-
           .footer {
             text-align: center;
             margin-top: 10px;
             color: #bbbbbb;
             font-size: 14px;
           }
-
           @keyframes fadeIn {
             0% { opacity: 0; transform: translateY(-10px); }
             100% { opacity: 1; transform: translateY(0); }
           }
-
           @keyframes slideIn {
             0% { opacity: 0; transform: translateX(-20px); }
             100% { opacity: 1; transform: translateX(0); }
@@ -191,9 +244,8 @@ export default function Home() {
             <div
               key={idx}
               className={`message ${msg.sender}`}
-            >
-              {msg.sender === 'user' ? '👨‍💼 ' : '✨ '}{msg.text}
-            </div>
+              dangerouslySetInnerHTML={{ __html: (msg.sender === 'user' ? "👨‍💼 " : "✨ ") + escapeHtml(msg.text) }}
+            />
           ))}
           <div ref={messagesEndRef} />
         </div>
