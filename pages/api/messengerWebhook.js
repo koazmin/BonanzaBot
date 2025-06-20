@@ -42,6 +42,10 @@ export default async function handler(req, res) {
 
         if (paused) return res.status(200).send('Paused - no reply sent');
 
+        // ✅ Typing effect starts here
+        await sendTypingAction(senderId);
+        await new Promise(resolve => setTimeout(resolve, 1500)); // Adjust typing duration if needed
+
         const geminiResponse = await fetch(`${process.env.SITE_URL}/api/gemini`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -60,6 +64,17 @@ export default async function handler(req, res) {
   }
 
   return res.status(405).send('Method Not Allowed');
+}
+
+async function sendTypingAction(recipientId) {
+  await fetch(`https://graph.facebook.com/v19.0/me/messages?access_token=${PAGE_ACCESS_TOKEN}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      recipient: { id: recipientId },
+      sender_action: 'typing_on'
+    })
+  });
 }
 
 async function sendMessage(recipientId, message) {
