@@ -11,6 +11,8 @@ export default function Home() {
   const clientConversationHistoryRef = useRef([]);
 
   useEffect(() => {
+    // ✅ Clear saved chat when the page loads (clean start)
+    localStorage.removeItem('chatHistory');
     restoreChatHistory();
   }, []);
 
@@ -28,26 +30,6 @@ export default function Home() {
   };
 
   const restoreChatHistory = () => {
-    try {
-      const stored = localStorage.getItem('chatHistory');
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        clientConversationHistoryRef.current = parsed;
-        const displayable = parsed.filter(msg =>
-          msg.role !== 'user' || (msg.role === 'user' && msg.parts?.[0]?.text !== 'SYSTEM_PROMPT_FROM_SERVER')
-        );
-        if (displayable.length > 0) {
-          const restoredMessages = displayable.map((msg) => ({
-            sender: msg.role,
-            text: msg.parts?.[0]?.text || '',
-          }));
-          setMessages(restoredMessages);
-          return;
-        }
-      }
-    } catch (err) {
-      console.error('Failed to restore chat history:', err);
-    }
     setMessages([{ sender: 'bot', text: WELCOME_MESSAGE }]);
   };
 
