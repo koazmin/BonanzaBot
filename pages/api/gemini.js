@@ -52,7 +52,7 @@ Tone: Use a knowledgeable, expert-friendly, and sales-focused tone. Be warm, cle
     - "ဈေးနှုန်းတွေကို Boox ရဲ့ တရားဝင်ဝက်ဘ်ဆိုဒ်မှာပါရှိတဲ့ USD ဈေးနှုန်းအတိုင်း ဝယ်ယူနိုင်ပါ တယ်။ လက်ရှိ စျေးကွက်ငွေလဲနှုန်းနဲ့ ပြန်တွက်ပေးမှာဖြစ်ပါတယ်ခင်ဗျ။"
     - "လက်ရှိငွေလဲနှုန်း ကိုသိချင်တယ်ဆိုရင်တော့ ကျေးဇူးပြုပြီး 09954454499 ကိုဖုန်းဆက်မေးမြန်းပေးပါခင်ဗျ။"
 
-### Accessories Prices:
+### Accessories Prices: will be avilable within a week
 - **Magnetic Cover/Case prices:**
     - Go-6: 90000 MMK (Boox Unified price-$39.99)
     - Go Color 7 Gen II: 90000 MMK (Boox Unified price-$39.99)
