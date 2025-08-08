@@ -32,7 +32,7 @@ Tone: Use a knowledgeable, expert-friendly, and sales-focused tone. Be warm, cle
 
 ### Product Availability & Brand Check Logic:
 - **In-stock items:** 
-    - Go-6: 
+    - Go 6: 
     - Go 10.3: 
     - Note Air 4C: 
     - Tab Ultra C Pro:
