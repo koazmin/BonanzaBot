@@ -3,7 +3,7 @@ import { Client } from '@notionhq/client';
 
 let paused = false;
 
-// ✅ Map Page IDs to their Access Tokens
+// Map Page IDs to their Access Tokens
 const pageTokens = {
   [process.env.PAGE_ID_EREADER]: process.env.PAGE_ACCESS_TOKEN_EREADER,
   [process.env.PAGE_ID_GADGETS]: process.env.PAGE_ACCESS_TOKEN_GADGETS
@@ -31,20 +31,20 @@ export default async function handler(req, res) {
 
     if (body.object === 'page') {
       for (const entry of body.entry) {
-        // ✅ Get the Page ID for this event
+        // Get the Page ID for this event
         const pageId = entry.id;
         const webhookEvent = entry.messaging[0];
         const senderId = webhookEvent.sender.id;
         const messageText = webhookEvent.message?.text;
 
-        // ✅ Find the correct access token for the page
+        // Find the correct access token for the page
         const pageAccessToken = pageTokens[pageId];
 
         if (!pageAccessToken) {
           console.error(`No access token found for Page ID: ${pageId}`);
           continue; // Skip to the next event
         }
-        
+
         if (!messageText) return res.status(200).send('No message text');
 
         if (messageText.toLowerCase() === 'pausebot') {
@@ -63,7 +63,8 @@ export default async function handler(req, res) {
         await sendTypingAction(senderId, pageAccessToken);
         await new Promise(resolve => setTimeout(resolve, 1500));
 
-        const userHistory = await getUserHistoryFromNotion(senderId);
+        // ✅ IMPORTANT: Pass pageId to the history function to get the correct chat context
+        const userHistory = await getUserHistoryFromNotion(senderId, pageId);
 
         const geminiResponse = await fetch(`${process.env.SITE_URL}/api/gemini`, {
           method: 'POST',
@@ -76,7 +77,8 @@ export default async function handler(req, res) {
 
         await sendMessage(senderId, reply, pageAccessToken);
 
-        await saveChatToNotion(senderId, messageText, reply, pageId); // Pass pageId to Notion
+        // Pass pageId to Notion
+        await saveChatToNotion(senderId, messageText, reply, pageId);
       }
       return res.status(200).send('EVENT_RECEIVED');
     } else {
@@ -87,7 +89,7 @@ export default async function handler(req, res) {
   return res.status(405).send('Method Not Allowed');
 }
 
-// ✅ Pass pageAccessToken to functions
+// Pass pageAccessToken to functions
 async function sendTypingAction(recipientId, pageAccessToken) {
   await fetch(`https://graph.facebook.com/v19.0/me/messages?access_token=${pageAccessToken}`, {
     method: 'POST',
@@ -110,7 +112,7 @@ async function sendMessage(recipientId, message, pageAccessToken) {
   });
 }
 
-// ✅ Add pageId to the Notion log
+// Add pageId to the Notion log
 async function saveChatToNotion(senderId, userMessage, botReply, pageId) {
   const timestamp = new Date().toLocaleString();
   await notion.pages.create({
@@ -128,22 +130,31 @@ async function saveChatToNotion(senderId, userMessage, botReply, pageId) {
       'Sender ID': {
         rich_text: [{ type: 'text', text: { content: senderId } }]
       },
-      'Page ID': { // Add a new column in Notion called "Page ID"
+      'Page ID': {
         rich_text: [{ type: 'text', text: { content: pageId } }]
       }
     }
   });
 }
 
-async function getUserHistoryFromNotion(senderId) {
+// ✅ UPDATED: Added pageId as a parameter and added a filter for it
+async function getUserHistoryFromNotion(senderId, pageId) {
   const history = [];
 
   try {
     const response = await notion.databases.query({
       database_id: databaseId,
       filter: {
-        property: 'Sender ID',
-        rich_text: { equals: senderId }
+        and: [
+          {
+            property: 'Sender ID',
+            rich_text: { equals: senderId }
+          },
+          {
+            property: 'Page ID',
+            rich_text: { equals: pageId }
+          }
+        ]
       },
       sorts: [{ property: 'Timestamp', direction: 'ascending' }],
       page_size: 20
