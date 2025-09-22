@@ -52,6 +52,7 @@ export default async function handler(req, res) {
           await sendMessage(senderId, '🤖 Bot paused. Human takeover active.', pageAccessToken);
           return res.status(200).send('Paused');
         }
+
         if (messageText.toLowerCase() === 'resumebot') {
           await redis.set(`pause:${pageId}`, 'false');
           await sendMessage(senderId, '🤖 Bot resumed. Automatic replies active.', pageAccessToken);
@@ -85,6 +86,7 @@ export default async function handler(req, res) {
         // Save to Notion
         await saveChatToNotion(senderId, messageText, reply, pageId);
       }
+
       return res.status(200).send('EVENT_RECEIVED');
     } else {
       return res.status(404).send('Not Found');
@@ -126,4 +128,38 @@ async function saveChatToNotion(senderId, userMessage, botReply, pageId) {
     properties: {
       Timestamp: { title: [{ type: 'text', text: { content: timestamp } }] },
       'User Message': { rich_text: [{ type: 'text', text: { content: userMessage } }] },
-      'Bot Reply': {
+      'Bot Reply': { rich_text: [{ type: 'text', text: { content: botReply } }] },
+      'Sender ID': { rich_text: [{ type: 'text', text: { content: senderId } }] },
+      'Page ID': { rich_text: [{ type: 'text', text: { content: pageId } }] },
+    },
+  });
+}
+
+// Get user history from Notion
+async function getUserHistoryFromNotion(senderId, pageId) {
+  const history = [];
+  try {
+    const response = await notion.databases.query({
+      database_id: databaseId,
+      filter: {
+        and: [
+          { property: 'Sender ID', rich_text: { equals: senderId } },
+          { property: 'Page ID', rich_text: { equals: pageId } },
+        ],
+      },
+      sorts: [{ property: 'Timestamp', direction: 'ascending' }],
+      page_size: 20,
+    });
+
+    for (const page of response.results) {
+      const userMsg = page.properties['User Message']?.rich_text?.[0]?.text?.content;
+      const botReply = page.properties['Bot Reply']?.rich_text?.[0]?.text?.content;
+
+      if (userMsg) history.push({ role: 'user', parts: [{ text: userMsg }] });
+      if (botReply) history.push({ role: 'model', parts: [{ text: botReply }] });
+    }
+  } catch (error) {
+    console.error('❗ Error retrieving history from Notion:', error);
+  }
+  return history;
+}
