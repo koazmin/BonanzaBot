@@ -126,40 +126,46 @@ async function saveChatToNotion(senderId, userMessage, botReply, pageId) {
   await notion.pages.create({
     parent: { database_id: databaseId },
     properties: {
-      Timestamp: { title: [{ type: 'text', text: { content: timestamp } }] },
-      'User Message': { rich_text: [{ type: 'text', text: { content: userMessage } }] },
-      'Bot Reply': { rich_text: [{ type: 'text', text: { content: botReply } }] },
-      'Sender ID': { rich_text: [{ type: 'text', text: { content: senderId } }] },
-      'Page ID': { rich_text: [{ type: 'text', text: { content: pageId } }] },
-    },
-  });
-}
-
-// Get user history from Notion
-async function getUserHistoryFromNotion(senderId, pageId) {
-  const history = [];
-  try {
-    const response = await notion.databases.query({
-      database_id: databaseId,
-      filter: {
-        and: [
-          { property: 'Sender ID', rich_text: { equals: senderId } },
-          { property: 'Page ID', rich_text: { equals: pageId } },
+      Timestamp: {
+        title: [
+          {
+            type: 'text',
+            text: { content: timestamp },
+          },
         ],
       },
-      sorts: [{ property: 'Timestamp', direction: 'ascending' }],
-      page_size: 20,
-    });
-
-    for (const page of response.results) {
-      const userMsg = page.properties['User Message']?.rich_text?.[0]?.text?.content;
-      const botReply = page.properties['Bot Reply']?.rich_text?.[0]?.text?.content;
-
-      if (userMsg) history.push({ role: 'user', parts: [{ text: userMsg }] });
-      if (botReply) history.push({ role: 'model', parts: [{ text: botReply }] });
-    }
-  } catch (error) {
-    console.error('❗ Error retrieving history from Notion:', error);
-  }
-  return history;
+      'User Message': {
+        rich_text: [
+          {
+            type: 'text',
+            text: { content: userMessage },
+          },
+        ],
+      },
+      'Bot Reply': {
+        rich_text: [
+          {
+            type: 'text',
+            text: { content: botReply },
+          },
+        ],
+      },
+      'Sender ID': {
+        rich_text: [
+          {
+            type: 'text',
+            text: { content: senderId },
+          },
+        ],
+      },
+      'Page ID': {
+        rich_text: [
+          {
+            type: 'text',
+            text: { content: pageId },
+          },
+        ],
+      },
+    },
+  });
 }
