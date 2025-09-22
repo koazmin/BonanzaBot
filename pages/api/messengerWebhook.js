@@ -1,9 +1,6 @@
 import fetch from 'node-fetch';
 import { Client } from '@notionhq/client';
 
-let paused = false;
-
-// ✅ Map Page IDs to their Access Tokens
 const pageTokens = {
   [process.env.PAGE_ID_EREADER]: process.env.PAGE_ACCESS_TOKEN_EREADER,
   [process.env.PAGE_ID_GADGETS]: process.env.PAGE_ACCESS_TOKEN_GADGETS
@@ -12,6 +9,63 @@ const pageTokens = {
 const VERIFY_TOKEN = process.env.MESSENGER_VERIFY_TOKEN;
 const notion = new Client({ auth: process.env.NOTION_API_KEY });
 const databaseId = process.env.NOTION_DATABASE_ID;
+
+// ✅ Helper: get pause state from Notion
+async function getPauseState() {
+  try {
+    const response = await notion.databases.query({
+      database_id: databaseId,
+      filter: {
+        property: "Type", // 👈 Add a column in Notion called "Type"
+        rich_text: { equals: "BotState" }
+      },
+      page_size: 1
+    });
+
+    if (response.results.length > 0) {
+      const paused = response.results[0].properties["Paused"]?.checkbox;
+      return paused === true;
+    }
+  } catch (err) {
+    console.error("❗ Error reading pause state from Notion:", err);
+  }
+  return false;
+}
+
+// ✅ Helper: set pause state in Notion
+async function setPauseState(paused) {
+  try {
+    const response = await notion.databases.query({
+      database_id: databaseId,
+      filter: {
+        property: "Type",
+        rich_text: { equals: "BotState" }
+      },
+      page_size: 1
+    });
+
+    if (response.results.length > 0) {
+      // Update existing page
+      await notion.pages.update({
+        page_id: response.results[0].id,
+        properties: {
+          Paused: { checkbox: paused }
+        }
+      });
+    } else {
+      // Create new page
+      await notion.pages.create({
+        parent: { database_id: databaseId },
+        properties: {
+          Type: { rich_text: [{ text: { content: "BotState" } }] },
+          Paused: { checkbox: paused }
+        }
+      });
+    }
+  } catch (err) {
+    console.error("❗ Error setting pause state in Notion:", err);
+  }
+}
 
 export default async function handler(req, res) {
   if (req.method === 'GET') {
@@ -31,40 +85,46 @@ export default async function handler(req, res) {
 
     if (body.object === 'page') {
       for (const entry of body.entry) {
-        // ✅ Get the Page ID for this event
         const pageId = entry.id;
         const webhookEvent = entry.messaging[0];
         const senderId = webhookEvent.sender.id;
         const messageText = webhookEvent.message?.text;
 
-        // ✅ Find the correct access token for the page
         const pageAccessToken = pageTokens[pageId];
-
         if (!pageAccessToken) {
           console.error(`No access token found for Page ID: ${pageId}`);
-          continue; // Skip to the next event
+          continue;
         }
-        
+
         if (!messageText) return res.status(200).send('No message text');
 
+        // ✅ Pause command
         if (messageText.toLowerCase() === 'pausebot') {
-          paused = true;
+          await setPauseState(true);
           await sendMessage(senderId, '🤖 Bot paused. Human takeover active.', pageAccessToken);
           return res.status(200).send('Paused');
         }
+
+        // ✅ Resume command
         if (messageText.toLowerCase() === 'resumebot') {
-          paused = false;
+          await setPauseState(false);
           await sendMessage(senderId, '🤖 Bot resumed. Automatic replies active.', pageAccessToken);
           return res.status(200).send('Resumed');
         }
 
-        if (paused) return res.status(200).send('Paused - no reply sent');
+        // ✅ Check pause state
+        if (await getPauseState()) {
+          return res.status(200).send('Paused - no reply sent');
+        }
 
+        // ✅ Typing action
         await sendTypingAction(senderId, pageAccessToken);
         await new Promise(resolve => setTimeout(resolve, 1500));
 
+        // ✅ Get conversation history
         const userHistory = await getUserHistoryFromNotion(senderId);
 
+        // ✅ Call Gemini AI
         const geminiResponse = await fetch(`${process.env.SITE_URL}/api/gemini`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -76,7 +136,7 @@ export default async function handler(req, res) {
 
         await sendMessage(senderId, reply, pageAccessToken);
 
-        await saveChatToNotion(senderId, messageText, reply, pageId); // Pass pageId to Notion
+        await saveChatToNotion(senderId, messageText, reply, pageId);
       }
       return res.status(200).send('EVENT_RECEIVED');
     } else {
@@ -87,7 +147,7 @@ export default async function handler(req, res) {
   return res.status(405).send('Method Not Allowed');
 }
 
-// ✅ Pass pageAccessToken to functions
+// ✅ Send typing
 async function sendTypingAction(recipientId, pageAccessToken) {
   await fetch(`https://graph.facebook.com/v19.0/me/messages?access_token=${pageAccessToken}`, {
     method: 'POST',
@@ -99,6 +159,7 @@ async function sendTypingAction(recipientId, pageAccessToken) {
   });
 }
 
+// ✅ Send message
 async function sendMessage(recipientId, message, pageAccessToken) {
   await fetch(`https://graph.facebook.com/v19.0/me/messages?access_token=${pageAccessToken}`, {
     method: 'POST',
@@ -110,36 +171,24 @@ async function sendMessage(recipientId, message, pageAccessToken) {
   });
 }
 
-// ✅ Add pageId to the Notion log
+// ✅ Save chats
 async function saveChatToNotion(senderId, userMessage, botReply, pageId) {
-  // ✅ Always save timestamp in Myanmar local time
-  const timestamp = new Date().toLocaleString('en-US', { timeZone: 'Asia/Yangon' });
-
+  const timestamp = new Date().toLocaleString("en-US", { timeZone: "Asia/Yangon" });
   await notion.pages.create({
     parent: { database_id: databaseId },
     properties: {
-      'Timestamp': {
-        title: [{ type: 'text', text: { content: timestamp } }]
-      },
-      'User Message': {
-        rich_text: [{ type: 'text', text: { content: userMessage } }]
-      },
-      'Bot Reply': {
-        rich_text: [{ type: 'text', text: { content: botReply } }]
-      },
-      'Sender ID': {
-        rich_text: [{ type: 'text', text: { content: senderId } }]
-      },
-      'Page ID': { // Add a new column in Notion called "Page ID"
-        rich_text: [{ type: 'text', text: { content: pageId } }]
-      }
+      Timestamp: { title: [{ text: { content: timestamp } }] },
+      "User Message": { rich_text: [{ text: { content: userMessage } }] },
+      "Bot Reply": { rich_text: [{ text: { content: botReply } }] },
+      "Sender ID": { rich_text: [{ text: { content: senderId } }] },
+      "Page ID": { rich_text: [{ text: { content: pageId } }] }
     }
   });
 }
 
+// ✅ Retrieve conversation history
 async function getUserHistoryFromNotion(senderId) {
   const history = [];
-
   try {
     const response = await notion.databases.query({
       database_id: databaseId,
