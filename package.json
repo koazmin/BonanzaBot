@@ -13,7 +13,8 @@
     "react-dom": "^18.3.0",
     "@google/generative-ai": "^0.11.0",
     "googleapis": "^121.0.0",
-    "@notionhq/client": "^2.2.14"
+    "@notionhq/client": "^2.2.14",
+    "@upstash/redis": "^1.7.0"
   },
   "engines": {
     "node": "20.x"
