@@ -112,7 +112,9 @@ async function sendMessage(recipientId, message, pageAccessToken) {
 
 // ✅ Add pageId to the Notion log
 async function saveChatToNotion(senderId, userMessage, botReply, pageId) {
-  const timestamp = new Date().toLocaleString();
+  // ✅ Always save timestamp in Myanmar local time
+  const timestamp = new Date().toLocaleString('en-US', { timeZone: 'Asia/Yangon' });
+
   await notion.pages.create({
     parent: { database_id: databaseId },
     properties: {
