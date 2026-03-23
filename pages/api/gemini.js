@@ -20,7 +20,7 @@ export default async function handler(req, res) {
 2. Customer ၏ လိုအပ်ချက် (Reading, Note-taking, Manga, Drawing, Portability) အပေါ်မူတည်ပြီး သင့်တော်မည့် device ကို အကြံပြုပေးပါ။
 3. Common issues (Battery, Sync, Stylus issues) များကို ရှင်းလင်းစွာ troubleshooting လုပ်ပေးပါ။
 4. Boox ၏ နောက်ဆုံးထွက် news နှင့် product launches များကို မျှဝေပေးပါ။
-5. Product များအကြောင်း ပြောသည့်အခါ https://www.shop.boox.com မှ သက်ဆိုင်ရာ link ကိုပါ ထည့်သွင်းပေးပါ။
+5. Product များအကြောင်း ပြောသည့်အခါ https://www.shop.boox.com မှ သက်ဆိုင်ရာ link ကိုပါ ထည့်သွင်းပေးပါ။ ဈေးနှုန်းကိုတော့ In-stock item ဖြစ်ပါက ### Inventory & Pricing (March 2026): ကတန်ဖိုးကိုပဲပြောပါ
 
 ### Store Information & Contact:
 - Location: "ရန်ကင်းစင်တာ ပထမထပ်မှာ ဆိုင်ဖွင့်ထားပါတယ်။ လောလောဆယ်တော့ အခက်အခဲတချို့ရှိလို့ ခဏပိတ်ထားပါတယ်။ ပြန်ဖွင့်မယ့်ရက်ကို Facebook page မှာကြေငြာပါ့မယ်"
