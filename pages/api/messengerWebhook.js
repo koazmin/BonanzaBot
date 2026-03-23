@@ -16,7 +16,7 @@ async function getPauseState() {
     const response = await notion.databases.query({
       database_id: databaseId,
       filter: {
-        property: "Type", // 👈 Add a column in Notion called "Type"
+        property: "Type",
         rich_text: { equals: "BotState" }
       },
       page_size: 1
@@ -45,7 +45,6 @@ async function setPauseState(paused) {
     });
 
     if (response.results.length > 0) {
-      // Update existing page
       await notion.pages.update({
         page_id: response.results[0].id,
         properties: {
@@ -53,7 +52,6 @@ async function setPauseState(paused) {
         }
       });
     } else {
-      // Create new page
       await notion.pages.create({
         parent: { database_id: databaseId },
         properties: {
@@ -85,6 +83,8 @@ export default async function handler(req, res) {
 
     if (body.object === 'page') {
       for (const entry of body.entry) {
+        if (!entry.messaging) continue;
+        
         const pageId = entry.id;
         const webhookEvent = entry.messaging[0];
         const senderId = webhookEvent.sender.id;
@@ -98,56 +98,53 @@ export default async function handler(req, res) {
 
         if (!messageText) return res.status(200).send('No message text');
 
-        // ✅ Pause command
+        // ✅ Commands
         if (messageText.toLowerCase() === 'pausebot') {
           await setPauseState(true);
           await sendMessage(senderId, '🤖 Bot paused. Human takeover active.', pageAccessToken);
           return res.status(200).send('Paused');
         }
 
-        // ✅ Resume command
         if (messageText.toLowerCase() === 'resumebot') {
           await setPauseState(false);
           await sendMessage(senderId, '🤖 Bot resumed. Automatic replies active.', pageAccessToken);
           return res.status(200).send('Resumed');
         }
 
-        // ✅ Check pause state
         if (await getPauseState()) {
           return res.status(200).send('Paused - no reply sent');
         }
 
-        // ✅ Typing action
+        // ✅ Action & Processing
         await sendTypingAction(senderId, pageAccessToken);
-        await new Promise(resolve => setTimeout(resolve, 1500));
-
-        // ✅ Get conversation history
         const userHistory = await getUserHistoryFromNotion(senderId);
 
-        // ✅ Call Gemini AI
-        const geminiResponse = await fetch(`${process.env.SITE_URL}/api/gemini`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ question: messageText, history: userHistory })
-        });
+        try {
+          const geminiResponse = await fetch(`${process.env.SITE_URL}/api/gemini`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ question: messageText, history: userHistory })
+          });
 
-        const data = await geminiResponse.json();
-        const reply = data.reply || 'မဖြေပေးနိုင်ပါ။';
+          const data = await geminiResponse.json();
+          const reply = data.reply || 'မဖြေပေးနိုင်ပါ။';
 
-        await sendMessage(senderId, reply, pageAccessToken);
+          // ✅ ၁။ အရင်ဆုံး Messenger ကို စာပို့ပါ (Notion error ကြောင့် ရပ်မသွားစေရန်)
+          await sendMessage(senderId, reply, pageAccessToken);
 
-        await saveChatToNotion(senderId, messageText, reply, pageId);
+          // ✅ ၂။ ပြီးမှ Notion ထဲ သိမ်းပါ
+          await saveChatToNotion(senderId, messageText, reply, pageId);
+
+        } catch (error) {
+          console.error("❗ Error in Gemini/Messenger flow:", error);
+        }
       }
       return res.status(200).send('EVENT_RECEIVED');
-    } else {
-      return res.status(404).send('Not Found');
     }
   }
-
   return res.status(405).send('Method Not Allowed');
 }
 
-// ✅ Send typing
 async function sendTypingAction(recipientId, pageAccessToken) {
   await fetch(`https://graph.facebook.com/v19.0/me/messages?access_token=${pageAccessToken}`, {
     method: 'POST',
@@ -159,7 +156,6 @@ async function sendTypingAction(recipientId, pageAccessToken) {
   });
 }
 
-// ✅ Send message
 async function sendMessage(recipientId, message, pageAccessToken) {
   await fetch(`https://graph.facebook.com/v19.0/me/messages?access_token=${pageAccessToken}`, {
     method: 'POST',
@@ -171,22 +167,30 @@ async function sendMessage(recipientId, message, pageAccessToken) {
   });
 }
 
-// ✅ Save chats
+// ✅ ပြင်ဆင်ထားသော Notion Save Function
 async function saveChatToNotion(senderId, userMessage, botReply, pageId) {
   const timestamp = new Date().toLocaleString("en-US", { timeZone: "Asia/Yangon" });
-  await notion.pages.create({
-    parent: { database_id: databaseId },
-    properties: {
-      Timestamp: { title: [{ text: { content: timestamp } }] },
-      "User Message": { rich_text: [{ text: { content: userMessage } }] },
-      "Bot Reply": { rich_text: [{ text: { content: botReply } }] },
-      "Sender ID": { rich_text: [{ text: { content: senderId } }] },
-      "Page ID": { rich_text: [{ text: { content: pageId } }] }
-    }
-  });
+  
+  // ✅ Notion ရဲ့ ၂၀၀၀ character limit မကျော်အောင် ဖြတ်ချခြင်း
+  const safeUserMsg = userMessage.length > 2000 ? userMessage.substring(0, 1990) + "..." : userMessage;
+  const safeBotReply = botReply.length > 2000 ? botReply.substring(0, 1990) + "..." : botReply;
+
+  try {
+    await notion.pages.create({
+      parent: { database_id: databaseId },
+      properties: {
+        Timestamp: { title: [{ text: { content: timestamp } }] },
+        "User Message": { rich_text: [{ text: { content: safeUserMsg } }] },
+        "Bot Reply": { rich_text: [{ text: { content: safeBotReply } }] },
+        "Sender ID": { rich_text: [{ text: { content: senderId } }] },
+        "Page ID": { rich_text: [{ text: { content: pageId } }] }
+      }
+    });
+  } catch (err) {
+    console.error("❗ Notion Save Error:", err.message);
+  }
 }
 
-// ✅ Retrieve conversation history
 async function getUserHistoryFromNotion(senderId) {
   const history = [];
   try {
@@ -197,7 +201,7 @@ async function getUserHistoryFromNotion(senderId) {
         rich_text: { equals: senderId }
       },
       sorts: [{ property: 'Timestamp', direction: 'ascending' }],
-      page_size: 20
+      page_size: 10 // Quota ချွေတာရန် စာမျက်နှာ ၁၀ ခုခန့်သာ ယူပါ
     });
 
     for (const page of response.results) {
@@ -210,6 +214,5 @@ async function getUserHistoryFromNotion(senderId) {
   } catch (error) {
     console.error('❗ Error retrieving history from Notion:', error);
   }
-
   return history;
 }
