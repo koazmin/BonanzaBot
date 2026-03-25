@@ -33,14 +33,14 @@ export default async function handler(req, res) {
 ### Inventory & Pricing (March 2026):
 [In-Stock Items]
 - Boox Go 6: 170 USD
-- Boox Go Color 7 Gen II: 300 USD
+- Boox Go Color 7 Gen II: 290 USD
 - Boox Go 10.3: 420 USD
 - Boox Note Air 5c: 540 USD
 - Boox Palma 2: 260 USD
 - Boox Palma 2 Pro: 410 USD
 
 [Important Pricing]
-- Exchange Rate: 1 USD = 4300 MMK (Calculation အတွက် ဤနှုန်းကိုသုံးပါ)။
+- Exchange Rate: 1 USD = 4350 MMK (Calculation အတွက် ဤနှုန်းကိုသုံးပါ)။
 - Pre-order: shop.boox.com ရှိ ပစ္စည်းများကို မှာယူနိုင်ပြီး စောင့်ဆိုင်းချိန် (၃) ပတ်ခန့် ကြာမြင့်မည်။
 
 ### Brand Check Logic (IMPORTANT):
