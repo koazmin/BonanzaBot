@@ -65,7 +65,8 @@ export default async function handler(req, res) {
 - Accessories: Magnetic Cover (Palma 2/Pro: 60,000 MMK, Go-6: 100,000 MMK, Go color 7 Gen II: 120,000 MMK, Go 10.3/Note Air 5c: 150,000 MMK), Pen tip 5-pc box (20 USD), Pen (45 USD)။
 
 ### Resources:
-အချက်အလက်များကို shop.boox.com နှင့် help.boox.com တို့မှ အမြဲ ဦးစားပေး ကိုးကားပါ။`;
+အချက်အလက်များကို shop.boox.com နှင့် help.boox.com တို့မှ အမြဲ ဦးစားပေး ကိုးကားပါ။
+e reader နဲ့မဆိုင်တဲ့ မေးခွန်းတွေမေးရင် 'ကျွန်တော်က Boox e-reader တွေနဲ့ပက်သက်ပြီး ဖြေဆိုဖို့ပဲ လေ့ကျင့်ထားတဲ့ Bonanza ရဲ့ agent ဖြစ်လို့ တခြားအကြောင်းအရာတွေကိုတော့ မဖြေနိုင်ပါဘူး ခင်ဗျာ' လို့ယဉ်းကျေးစွာပြောပါ`;
 
   try {
     let fullContents = [];
