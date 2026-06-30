@@ -1,9 +1,9 @@
 export const config = {
-  runtime: 'edge', // Vercel Cold Starts နှင့် Timeout ကာကွယ်ရန် Edge Runtime သို့ ပြောင်းလဲထားပါသည်
+  runtime: 'edge', // Vercel Cold Starts နှင့် Timeout ကာကွယ်ရန် Edge Runtime ဖြစ်သည်
 };
 
 export default async function handler(req, res) {
-  // Edge Runtime တွင် Standard Request/Response Object ကို သုံးရသဖြင့် req.json() ဖြင့် Body ဖတ်ပါသည်
+  // Edge Runtime တွင် req.json() ဖြင့် Body ဖတ်ပါသည်
   const body = await req.json().catch(() => ({}));
   const { question, history } = body;
   const API_KEY = process.env.GEMINI_API_KEY;
@@ -16,7 +16,7 @@ export default async function handler(req, res) {
     );
   }
 
-  // ✅ All-in-One Optimized System Prompt (Capabilities + Store Info + Pricing)[span_0](start_span)[span_0](end_span)
+  // ✅ Updated System Prompt (July 2026 Inventory & MMK Pricing)
   const SYSTEM_PROMPT = `မင်္ဂလာပါ။ Bonanza E-Reader Store ရဲ့ တရားဝင် Assistant ဖြစ်ပါတယ်။ လူကြီးမင်းကို ကူညီပေးဖို့ အသင့်ရှိနေပါတယ်ခင်ဗျ။
 
 ### Role & Identity:
@@ -29,7 +29,7 @@ export default async function handler(req, res) {
 2. Customer ၏ လိုအပ်ချက် (Reading, Note-taking, Manga, Drawing, Portability) အပေါ်မူတည်ပြီး သင့်တော်မည့် device ကို အကြံပြုပေးပါ။
 3. Common issues (Battery, Sync, Stylus issues) များကို ရှင်းလင်းစွာ troubleshooting လုပ်ပေးပါ။
 4. Boox ၏ နောက်ဆုံးထွက် news နှင့် product launches များကို မျှဝေပေးပါ။
-5. Product များအကြောင်း ပြောသည့်အခါ https://www.shop.boox.com မှ သက်ဆိုင်ရာ link ကိုပါ ထည့်သွင်းပေးပါ။ ဈေးနှုန်းကိုတော့ In-stock item ဖြစ်ပါက ### Inventory & Pricing (March 2026): ကတန်ဖိုးကိုပဲပြောပါ
+5. Product များအကြောင်း ပြောသည့်အခါ https://www.shop.boox.com မှ သက်ဆိုင်ရာ link ကိုပါ ထည့်သွင်းပေးပါ။ ဈေးနှုန်းကိုတော့ In-stock item ဖြစ်ပါက ### Inventory & Pricing (July 2026): ကတန်ဖိုးကိုပဲပြောပါ
 6. Accessories များ (ဥပမာ Magnetic Case) ကိုတော့သီးသန့်ထပ်ဝယ်ရပါမယ်
 
 ### Store Information & Contact:
@@ -39,22 +39,22 @@ export default async function handler(req, res) {
 - Phone: 09954454499
 - Email: admin@bonanza.com.mm
 
-### Inventory & Pricing (March 2026):
+### Inventory & Pricing (July 2026):
 [In-Stock Items]
-- Boox Go 6: 170 USD
-- Boox Go Color 7 Gen II: 290 USD
-- Boox Go 10.3: 420 USD
-- Boox Note Air 5c: 540 USD
-- Boox Palma 2: 260 USD
-- Boox Palma 2 Pro: 410 USD
+- Boox Go 6 : 731,000 MMK
+- Boox Go 6 Gen II: 924,000 MMK
+- Boox Go Color 7 Gen II: 1,320,000 MMK
+- Boox Go 10.3 Gen II Lumi : 2,024,000 MMK
+- Boox Note Air 5c: 2,376,000 MMK
+- Boox Palma 2: 1,225,500 MMK
+- Boox Palma 2 Pro: 1,804,000 MMK
 
 [Important Pricing]
-- Exchange Rate: 1 USD = 4350 MMK (Calculation အတွက် ဤနှုန်းကိုသုံးပါ)။
-- Pre-order: shop.boox.com ရှိ ပစ္စည်းများကို မှာယူနိုင်ပြီး စောင့်ဆိုင်းချိန် (၃) ပတ်ခန့် ကြာမြင့်မည်။
+- Pre-order: shop.boox.com ရှိ ပစ္စည်းများကို မှာယူနိုင်ပြီး စောင့်ဆိုင်းချိန် (၂) ပတ်ခန့် ကြာမြင့်မည်။
 
 ### Brand Check Logic (IMPORTANT):
-- လူကြီးမင်း မေးသော Device သည် In-stock list တွင် မပါပါက Google Search သို့မဟုတ် shop.boox.com တွင် အရင်စစ်ဆေးပါ။
-- Boox Brand ဖြစ်ပါက "ပစ္စည်းလက်ကျန်မရှိသေးသော်လည်း (၃) ပတ်ခန့် စောင့်ဆိုင်းရမည့် Pre-order တင်နိုင်ကြောင်း" အကြောင်းကြားပါ။
+- မေးသော Device သည် In-stock list တွင် မပါပါက Google Search သို့မဟုတ် shop.boox.com တွင် အရင်စစ်ဆေးပါ။
+- Boox Brand ဖြစ်ပါက "ပစ္စည်းလက်ကျန်မရှိသေးသော်လည်း (၂) ပတ်ခန့် စောင့်ဆိုင်းရမည့် Pre-order တင်နိုင်ကြောင်း" အကြောင်းကြားပါ။
 - Boox Brand မဟုတ်ပါက "Bonanza တွင် Boox တစ်မျိုးတည်းသာ ရောင်းချကြောင်း" ယဉ်ကျေးစွာ ပြောပါ။
 
 ### Common FAQs:
@@ -75,10 +75,10 @@ export default async function handler(req, res) {
       fullContents = history.filter(msg => 
         msg.parts?.[0]?.text !== SYSTEM_PROMPT && 
         msg.role !== 'system'
-      ); //[span_1](start_span)[span_1](end_span)
+      );
     }
 
-    fullContents.push({ role: "user", parts: [{ text: question }] }); //[span_2](start_span)[span_2](end_span)
+    fullContents.push({ role: "user", parts: [{ text: question }] });
 
     // ✅ Exponential Backoff & Retry Logic for Gemini Server Traffic Errors
     let response;
@@ -87,7 +87,7 @@ export default async function handler(req, res) {
 
     for (let i = 0; i < retries; i++) {
       try {
-        // 🚀 Gemini 3.5 Flash Model အသစ်သို့ Endpoint ပြောင်းလဲထားပါသည်
+        // 🚀 Gemini 3.5 Flash Model
         response = await fetch(
           `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${API_KEY}`,
           {
@@ -102,12 +102,11 @@ export default async function handler(req, res) {
                 maxOutputTokens: 2000,
                 temperature: 0.7,
               },
-              tools: [{ googleSearch: {} }] //[span_3](start_span)[span_3](end_span)
+              tools: [{ googleSearch: {} }]
             })
           }
         );
 
-        // 503 Busy သို့မဟုတ် 429 Rate Limit ဖြစ်ခဲ့လျှင် ခဏစောင့်ပြီး အလိုအလျောက် ပြန်ကြိုးစားပါမည်
         if (response.status === 503 || response.status === 429) {
           console.warn(`Gemini API returned status ${response.status}. Retrying in ${delay}ms... (Attempt ${i + 1}/${retries})`);
           if (i < retries - 1) {
@@ -128,7 +127,6 @@ export default async function handler(req, res) {
       const errorText = await response.text();
       console.error("Gemini API Error after retries:", response.status, errorText);
       
-      // 503 High Demand ဖြစ်နေပါက Customer ကို ယဉ်ကျေးပျူငှာသော စာသားပြပါမည်
       if (response.status === 503) {
         return new Response(
           JSON.stringify({
@@ -147,13 +145,13 @@ export default async function handler(req, res) {
     }
 
     const data = await response.json();
-    let reply = data?.candidates?.[0]?.content?.parts?.[0]?.text || "မဖြေပေးနိုင်ပါ။"; //[span_4](start_span)[span_4](end_span)
+    let reply = data?.candidates?.[0]?.content?.parts?.[0]?.text || "မဖြေပေးနိုင်ပါ။";
 
-    // Clean Markdown/HTML for Messenger[span_5](start_span)[span_5](end_span)
-    reply = reply.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, '$2'); //[span_6](start_span)[span_6](end_span)
-    reply = reply.replace(/<\/?a\b[^>]*>/g, ''); //[span_7](start_span)[span_7](end_span)
+    // Clean Markdown/HTML for Messenger
+    reply = reply.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, '$2');
+    reply = reply.replace(/<\/?a\b[^>]*>/g, '');
 
-    fullContents.push({ role: "model", parts: [{ text: reply }] }); //[span_8](start_span)[span_8](end_span)
+    fullContents.push({ role: "model", parts: [{ text: reply }] });
 
     return new Response(
       JSON.stringify({ 
