@@ -20,7 +20,11 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Missing userMessage or botReply' });
     }
 
-    const timestamp = new Date().toLocaleString(); // Format date and time for readability
+    const timestamp = new Date().toLocaleString('en-US', { timeZone: 'Asia/Yangon' });
+
+    // Notion rich_text limit is 2000 chars per block — truncate to stay under it
+    const safeUserMsg = userMessage.length > 2000 ? userMessage.substring(0, 1990) + '...' : userMessage;
+    const safeBotReply = botReply.length > 2000 ? botReply.substring(0, 1990) + '...' : botReply;
 
     // Append a new page (row) to the Notion database
     await notion.pages.create({
@@ -40,11 +44,15 @@ export default async function handler(req, res) {
         },
         'User Message': { // This is a regular Text property
           type: 'rich_text',
-          rich_text: [{ type: 'text', text: { content: userMessage } }]
+          rich_text: [{ type: 'text', text: { content: safeUserMsg } }]
         },
         'Bot Reply': { // This is a regular Text property
           type: 'rich_text',
-          rich_text: [{ type: 'text', text: { content: botReply } }]
+          rich_text: [{ type: 'text', text: { content: safeBotReply } }]
+        },
+        'Sender ID': {
+          type: 'rich_text',
+          rich_text: [{ type: 'text', text: { content: 'web-chat' } }]
         },
       },
     });
