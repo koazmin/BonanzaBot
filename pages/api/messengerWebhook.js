@@ -79,6 +79,35 @@ function verifySignature(rawBody, signatureHeader, appSecret) {
 
 let globalPauseCache = { value: false, fetchedAt: 0 };
 
+// Set the global pause flag (BotState row in Notion) and refresh the cache so
+// it takes effect immediately on this instance.
+async function setGlobalPause(paused) {
+  try {
+    const response = await notion.databases.query({
+      database_id: databaseId,
+      filter: { property: 'Type', rich_text: { equals: 'BotState' } },
+      page_size: 1,
+    });
+    if (response.results.length > 0) {
+      await notion.pages.update({
+        page_id: response.results[0].id,
+        properties: { Paused: { checkbox: paused } },
+      });
+    } else {
+      await notion.pages.create({
+        parent: { database_id: databaseId },
+        properties: {
+          Type: { rich_text: [{ text: { content: 'BotState' } }] },
+          Paused: { checkbox: paused },
+        },
+      });
+    }
+    globalPauseCache = { value: paused, fetchedAt: Date.now() };
+  } catch (err) {
+    console.error('❗ Error setting global pause state in Notion:', err);
+  }
+}
+
 async function getGlobalPauseState() {
   if (Date.now() - globalPauseCache.fetchedAt < 60 * 1000) return globalPauseCache.value;
   try {
@@ -356,15 +385,56 @@ async function getUserHistoryFromNotion(senderId) {
 
 async function processMessagingEvent(event, pageId, pageAccessToken) {
   // Echo = a message the Page itself sent. If it wasn't sent by this bot app,
-  // a human replied from the Page inbox → pause the bot for that conversation.
+  // a human (admin) typed it from the Page inbox.
   if (event.message?.is_echo) {
     const appId = event.message.app_id ? String(event.message.app_id) : '';
     const botAppId = process.env.FB_APP_ID ? String(process.env.FB_APP_ID) : null;
     const isHumanReply = botAppId ? appId !== botAppId : !appId || appId === PAGE_INBOX_APP_ID;
-    if (isHumanReply && event.recipient?.id) {
-      await pauseConversation(pageId, event.recipient.id);
-      console.log(`👤 Human takeover: paused ${event.recipient.id} for ${HUMAN_TAKEOVER_HOURS}h`);
+    const customerId = event.recipient?.id;
+    if (!isHumanReply || !customerId) return;
+
+    // Dedup echo deliveries too, so redelivered events can't double-fire
+    const echoMid = event.message.mid;
+    if (echoMid) {
+      const firstTime = await kvSetIfNotExists(`mid:${echoMid}`, '1', 24 * 3600);
+      if (!firstTime) return;
     }
+
+    const echoText = event.message.text?.trim().toLowerCase();
+
+    // Admin chat commands — typed from the Page inbox, control the WHOLE bot
+    if (echoText === 'pausebot') {
+      await setGlobalPause(true);
+      await sendMessage(
+        customerId,
+        '🤖 Bot ကို ရပ်လိုက်ပါပြီ။ Customer အားလုံးကို လူကိုယ်တိုင်သာ ဖြေရပါမည်။ ပြန်ဖွင့်ရန် resumebot ဟုရိုက်ပါ။',
+        pageAccessToken
+      );
+      return;
+    }
+    if (echoText === 'resumebot') {
+      await setGlobalPause(false);
+      await resumeConversation(pageId, customerId);
+      await sendMessage(
+        customerId,
+        '🤖 Bot ပြန်ဖွင့်လိုက်ပါပြီ။ အလိုအလျောက် ဖြေကြားမှုများ ပြန်လည်စတင်ပါပြီ။',
+        pageAccessToken
+      );
+      return;
+    }
+
+    // Ordinary human reply → pause this conversation; announce the takeover
+    // in the chat only on the first reply (not on every follow-up message)
+    const alreadyPaused = await isConversationPaused(pageId, customerId);
+    await pauseConversation(pageId, customerId);
+    if (!alreadyPaused) {
+      await sendMessage(
+        customerId,
+        `👤 တာဝန်ရှိသူ ကိုယ်တိုင်ဝင်ရောက် ဖြေကြားပေးနေပါပြီခင်ဗျ။ Bot အလိုအလျောက်ဖြေကြားမှုကို ခေတ္တရပ်ထားပါတယ်။`,
+        pageAccessToken
+      );
+    }
+    console.log(`👤 Human takeover: paused ${customerId} for ${HUMAN_TAKEOVER_HOURS}h`);
     return;
   }
 
@@ -408,6 +478,9 @@ async function processMessagingEvent(event, pageId, pageAccessToken) {
     return;
   }
 
+  // Globally paused by admin → complete silence for customers
+  if (await getGlobalPauseState()) return;
+
   // Manual per-conversation controls (testing / bringing the bot back early)
   if (messageText?.toLowerCase() === 'resumebot') {
     await resumeConversation(pageId, senderId);
@@ -420,8 +493,7 @@ async function processMessagingEvent(event, pageId, pageAccessToken) {
     return;
   }
 
-  // Paused (globally by admin, or per-conversation by human takeover) → stay quiet
-  if (await getGlobalPauseState()) return;
+  // Paused per-conversation by human takeover → stay quiet
   if (await isConversationPaused(pageId, senderId)) return;
 
   // Download any photos the customer sent so Gemini can look at them
