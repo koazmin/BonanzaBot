@@ -400,30 +400,7 @@ async function processMessagingEvent(event, pageId, pageAccessToken) {
       if (!firstTime) return;
     }
 
-    const echoText = event.message.text?.trim().toLowerCase();
-
-    // Admin chat commands — typed from the Page inbox, control the WHOLE bot
-    if (echoText === 'pausebot') {
-      await setGlobalPause(true);
-      await sendMessage(
-        customerId,
-        '🤖 Bot ကို ရပ်လိုက်ပါပြီ။ Customer အားလုံးကို လူကိုယ်တိုင်သာ ဖြေရပါမည်။ ပြန်ဖွင့်ရန် resumebot ဟုရိုက်ပါ။',
-        pageAccessToken
-      );
-      return;
-    }
-    if (echoText === 'resumebot') {
-      await setGlobalPause(false);
-      await resumeConversation(pageId, customerId);
-      await sendMessage(
-        customerId,
-        '🤖 Bot ပြန်ဖွင့်လိုက်ပါပြီ။ အလိုအလျောက် ဖြေကြားမှုများ ပြန်လည်စတင်ပါပြီ။',
-        pageAccessToken
-      );
-      return;
-    }
-
-    // Ordinary human reply → pause this conversation; announce the takeover
+    // Human reply from the Page inbox → pause this conversation; announce the takeover
     // in the chat only on the first reply (not on every follow-up message)
     const alreadyPaused = await isConversationPaused(pageId, customerId);
     await pauseConversation(pageId, customerId);
@@ -476,6 +453,30 @@ async function processMessagingEvent(event, pageId, pageAccessToken) {
       pageAccessToken
     );
     return;
+  }
+
+  // Admin control channel: the admin's own conversation with the page
+  // (senderId matches ADMIN_PSID_*). Commands here control the WHOLE bot and
+  // are invisible to customers.
+  if (senderId === adminPsids[pageId]) {
+    if (messageText?.toLowerCase() === 'pausebot') {
+      await setGlobalPause(true);
+      await sendMessage(
+        senderId,
+        '🤖 Bot တစ်ခုလုံး ရပ်လိုက်ပါပြီ။ Customer အားလုံးကို လူကိုယ်တိုင်သာ ဖြေရပါမည်။ ပြန်ဖွင့်ရန် resumebot ဟုရိုက်ပါ။',
+        pageAccessToken
+      );
+      return;
+    }
+    if (messageText?.toLowerCase() === 'resumebot') {
+      await setGlobalPause(false);
+      await sendMessage(
+        senderId,
+        '🤖 Bot တစ်ခုလုံး ပြန်ဖွင့်လိုက်ပါပြီ။ အလိုအလျောက်ဖြေကြားမှုများ ပြန်လည်စတင်ပါပြီ။',
+        pageAccessToken
+      );
+      return;
+    }
   }
 
   // Globally paused by admin → complete silence for customers
