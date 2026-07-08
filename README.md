@@ -23,6 +23,25 @@ Bonanza E-Reader Store ရဲ့ Facebook Messenger + Web chat assistant (Gemini
 | `UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN` | [Upstash](https://upstash.com) free Redis။ Message dedup နှင့် human-takeover pause အတွက်။ မထည့်လျှင် in-memory fallback ဖြင့် အလုပ်လုပ်မည် (serverless instance တစ်ခုအတွင်းသာ မှတ်မိမည်)။ |
 | `NOTION_PRODUCTS_DB_ID` | ဈေးနှုန်းစာရင်း Notion database (အောက်တွင်ကြည့်ပါ)။ မထည့်လျှင် code ထဲက fallback စာရင်းကို သုံးမည်။ |
 | `HUMAN_TAKEOVER_HOURS` | လူကိုယ်တိုင် reply ပြန်ပြီးနောက် bot ငြိမ်နေမည့် နာရီ (default: 6) |
+| `NOTION_ORDERS_DB_ID` | Order များသိမ်းမည့် "Bonanza Orders" database ID။ **ထည့်မှသာ order-taking feature ပွင့်မည်။** |
+| `ADMIN_PSID_EREADER` / `ADMIN_PSID_GADGETS` | Order noti လက်ခံမည့် admin ၏ Messenger PSID (page တစ်ခုချင်းစီအတွက် သီးသန့်)။ Page ကို `adminid` ဟု message ပို့လျှင် မိမိ PSID ကို bot က ပြန်ပြောပြမည်။ |
+
+## Order-Taking Feature
+
+Customer က Messenger မှ "ဝယ်မယ်" ပြောလျှင် bot က **အမည်၊ ဖုန်း၊ လိပ်စာ၊ ပစ္စည်း၊ အရေအတွက်၊ ငွေချေနည်း** တို့ကို စကားပြောရင်း မေးယူပြီး၊ customer အတည်ပြုမှသာ:
+
+1. Notion **"Bonanza Orders"** database ထဲ `Pending` status ဖြင့် သိမ်းသည် (ဈေးနှုန်းကို bot ၏ inventory စာရင်းမှသာ ယူသည် — model ခန့်မှန်းဈေး မသုံးပါ)
+2. Customer ထံ Order နံပါတ်ပါသော အတည်ပြုစာ ပို့သည်
+3. Admin ထံ Messenger မှ order အသေးစိတ် noti ပို့သည်
+
+Customer က နောက်မှ "order ဘယ်ရောက်နေပြီလဲ" မေးလျှင် Notion ထဲက Status (Pending/Confirmed/Shipped/Delivered/Cancelled) ကိုကြည့်ပြီး ဖြေသည် — Status ကို Notion ထဲမှာ ပြောင်းပေးရုံပါ။
+
+### Setup (တစ်ကြိမ်သာ)
+
+1. Orders database က ဆောက်ပြီးသားဖြစ်သည်: [Bonanza Orders](https://app.notion.com/p/ed596b2a051948ae95cdca002ca2344c)။ ၎င်း database ကိုဖွင့်ပြီး ⋯ menu → **Connections** → bot ၏ integration (chat log နှင့်တူတူ) ကို ချိတ်ပေးပါ။
+2. Vercel တွင် `NOTION_ORDERS_DB_ID=ed596b2a051948ae95cdca002ca2344c` ထည့်ပါ။
+3. Page တစ်ခုချင်းစီကို မိမိ personal Facebook account မှ **`adminid`** ဟု message ပို့ပါ — bot ကပြန်ပြောသော PSID ကို `ADMIN_PSID_EREADER` / `ADMIN_PSID_GADGETS` တွင်ထည့်ပါ။
+4. Admin noti ပုံမှန်ရောက်စေရန် admin account မှ page ကို ရံဖန်ရံခါ message ပို့ထားပါ (Facebook ၏ messaging window policy ကြောင့်)။ Noti ရောက်/မရောက် မသေချာလျှင်လည်း order တိုင်း Notion ထဲမှာ အမြဲရှိသည်။
 
 ## Products Database (Notion) — ဈေးနှုန်း redeploy မလုပ်ဘဲ ပြင်နည်း
 

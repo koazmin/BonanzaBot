@@ -1,7 +1,15 @@
 import crypto from 'crypto';
 import { Client } from '@notionhq/client';
-import { askGemini, BUSY_MESSAGE, NETWORK_ERROR_MESSAGE } from '../../lib/gemini';
+import { askGemini, lookupPrice, BUSY_MESSAGE, NETWORK_ERROR_MESSAGE } from '../../lib/gemini';
 import { kvGet, kvSet, kvDelete, kvSetIfNotExists } from '../../lib/kv';
+import {
+  ordersEnabled,
+  parseOrderBlock,
+  validateOrder,
+  generateOrderId,
+  createOrderInNotion,
+  getLatestOrderForUser,
+} from '../../lib/orders';
 
 // Raw body is needed to verify Facebook's X-Hub-Signature-256 header
 export const config = {
@@ -11,6 +19,13 @@ export const config = {
 const pageTokens = {
   [process.env.PAGE_ID_EREADER]: process.env.PAGE_ACCESS_TOKEN_EREADER,
   [process.env.PAGE_ID_GADGETS]: process.env.PAGE_ACCESS_TOKEN_GADGETS,
+};
+
+// Admin PSIDs for order notifications (PSIDs are page-scoped, so one per page).
+// Get yours by messaging the page the word: adminid
+const adminPsids = {
+  [process.env.PAGE_ID_EREADER]: process.env.ADMIN_PSID_EREADER,
+  [process.env.PAGE_ID_GADGETS]: process.env.ADMIN_PSID_GADGETS,
 };
 
 const VERIFY_TOKEN = process.env.MESSENGER_VERIFY_TOKEN;
@@ -165,6 +180,102 @@ async function sendMessage(recipientId, message, pageAccessToken, { quickReplies
   }
 }
 
+// Notify the page admin about a new order. Uses a MESSAGE_TAG send so it works
+// outside the 24-hour messaging window (admin should still message the page
+// occasionally; the order is always in Notion regardless).
+async function notifyAdmin(pageId, pageAccessToken, text) {
+  const adminPsid = adminPsids[pageId];
+  if (!adminPsid) {
+    console.warn(`⚠️ No ADMIN_PSID configured for page ${pageId} — order noti skipped.`);
+    return;
+  }
+  for (const chunk of splitMessage(text)) {
+    await callSendAPI(pageAccessToken, {
+      recipient: { id: adminPsid },
+      messaging_type: 'MESSAGE_TAG',
+      tag: 'ACCOUNT_UPDATE',
+      message: { text: chunk },
+    });
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Orders
+// ---------------------------------------------------------------------------
+
+function formatOrderSummary(order, orderId, price) {
+  return [
+    `✅ Order တင်ပြီးပါပြီခင်ဗျ။`,
+    ``,
+    `Order နံပါတ်: ${orderId}`,
+    `ပစ္စည်း: ${order.product} x ${order.quantity}`,
+    `ဈေးနှုန်း: ${price || 'တာဝန်ရှိသူမှ အတည်ပြုပေးပါမည်'}`,
+    `အမည်: ${order.name}`,
+    `ဖုန်း: ${order.phone}`,
+    `လိပ်စာ: ${order.address}`,
+    `ငွေချေနည်း: ${order.payment}`,
+    ``,
+    `တာဝန်ရှိသူက မကြာခင် ဆက်သွယ်ပြီး အတည်ပြုပေးပါမယ်ခင်ဗျာ။ ကျေးဇူးတင်ပါတယ် 🙏`,
+  ].join('\n');
+}
+
+function formatAdminNotification(order, orderId, price, senderId) {
+  return [
+    `🛒 Order အသစ်ရောက်ပါပြီ — ${orderId}`,
+    ``,
+    `ပစ္စည်း: ${order.product} x ${order.quantity}`,
+    `ဈေးနှုန်း: ${price || '⚠️ စာရင်းထဲမတွေ့ပါ — စစ်ဆေးပေးပါ'}`,
+    `Customer: ${order.name} (${order.phone})`,
+    `လိပ်စာ: ${order.address}`,
+    `ငွေချေနည်း: ${order.payment}`,
+    order.note ? `မှတ်ချက်: ${order.note}` : null,
+    ``,
+    `Notion "Bonanza Orders" ထဲမှာ Pending status ဖြင့် သိမ်းထားပါပြီ။`,
+  ]
+    .filter((line) => line !== null)
+    .join('\n');
+}
+
+// Returns the confirmation text to send the customer, or null if no valid
+// order was found in the reply.
+async function handleOrderBlock(order, senderId, pageId, pageAccessToken) {
+  const problems = validateOrder(order);
+  if (problems.length > 0) {
+    console.warn(`⚠️ Order block rejected (missing/invalid: ${problems.join(', ')})`);
+    return null;
+  }
+
+  const orderId = generateOrderId();
+  const price = lookupPrice(order.product);
+
+  try {
+    await createOrderInNotion(order, { orderId, price, senderId, pageId });
+  } catch (err) {
+    console.error('❗ Order create failed:', err.message);
+    return (
+      'တောင်းပန်ပါတယ်ခင်ဗျ — order စနစ်ထဲ သိမ်းရာမှာ အနည်းငယ် အဆင်မပြေဖြစ်သွားပါတယ်။ ' +
+      'ဖုန်း 09954454499 သို့ တိုက်ရိုက်ဆက်သွယ်ပေးပါခင်ဗျာ။'
+    );
+  }
+
+  await notifyAdmin(pageId, pageAccessToken, formatAdminNotification(order, orderId, price, senderId));
+  return formatOrderSummary(order, orderId, price);
+}
+
+// Latest order status injected into the system prompt so the bot can answer
+// "order ဘယ်ရောက်နေပြီလဲ" from real data instead of guessing.
+async function buildOrderContext(senderId) {
+  if (!ordersEnabled()) return null;
+  const latest = await getLatestOrderForUser(senderId);
+  if (!latest) return null;
+  return (
+    `### Customer's Existing Order (order status မေးလျှင် ဤအချက်ဖြင့်သာဖြေပါ):\n` +
+    `- Order နံပါတ်: ${latest.orderId}\n` +
+    `- ပစ္စည်း: ${latest.product} x ${latest.quantity}\n` +
+    `- အခြေအနေ: ${latest.statusMyanmar}`
+  );
+}
+
 // ---------------------------------------------------------------------------
 // Attachments: download customer-sent images so Gemini can look at them
 // ---------------------------------------------------------------------------
@@ -286,6 +397,17 @@ async function processMessagingEvent(event, pageId, pageAccessToken) {
     return;
   }
 
+  // Reveal the sender's PSID so the admin can set ADMIN_PSID_* env vars.
+  // Harmless for customers — it only shows their own ID.
+  if (messageText?.toLowerCase() === 'adminid') {
+    await sendMessage(
+      senderId,
+      `🆔 Your PSID for this page:\n${senderId}\n\nAdmin ဖြစ်ပါက ဤနံပါတ်ကို Vercel env (ADMIN_PSID_...) တွင်ထည့်ပါ။`,
+      pageAccessToken
+    );
+    return;
+  }
+
   // Manual per-conversation controls (testing / bringing the bot back early)
   if (messageText?.toLowerCase() === 'resumebot') {
     await resumeConversation(pageId, senderId);
@@ -321,15 +443,28 @@ async function processMessagingEvent(event, pageId, pageAccessToken) {
   await sendSenderAction(senderId, 'mark_seen', pageAccessToken);
   await sendSenderAction(senderId, 'typing_on', pageAccessToken);
 
-  const userHistory = await getUserHistoryFromNotion(senderId);
+  const [userHistory, orderContext] = await Promise.all([
+    getUserHistoryFromNotion(senderId),
+    buildOrderContext(senderId),
+  ]);
   const question =
     messageText ||
     'Customer က ပုံပို့ထားပါတယ်။ ပုံကိုကြည့်ပြီး သင့်တော်သလို ကူညီဖြေကြားပေးပါ။';
 
   let reply;
+  let order = null;
   try {
-    const result = await askGemini({ question, history: userHistory, images });
-    reply = result.reply;
+    const result = await askGemini({
+      question,
+      history: userHistory,
+      images,
+      channel: 'messenger',
+      extraContext: orderContext,
+    });
+    // Strip the machine-readable [ORDER] block before the customer sees it
+    const parsed = parseOrderBlock(result.reply);
+    reply = parsed.cleanReply || result.reply;
+    order = parsed.order;
   } catch (error) {
     console.error('❗ Gemini error:', error);
     reply = error.status === 503 || error.status === 429 ? BUSY_MESSAGE : NETWORK_ERROR_MESSAGE;
@@ -337,6 +472,16 @@ async function processMessagingEvent(event, pageId, pageAccessToken) {
 
   // Send to Messenger first so a Notion error can't block the customer's reply
   await sendMessage(senderId, reply, pageAccessToken, { quickReplies: QUICK_REPLIES });
+
+  // Customer confirmed an order → save to Notion, confirm to customer, noti admin
+  if (order && ordersEnabled()) {
+    const confirmation = await handleOrderBlock(order, senderId, pageId, pageAccessToken);
+    if (confirmation) {
+      await sendMessage(senderId, confirmation, pageAccessToken, { quickReplies: QUICK_REPLIES });
+      reply += '\n\n' + confirmation;
+    }
+  }
+
   await saveChatToNotion(senderId, question, reply, pageId);
 }
 
