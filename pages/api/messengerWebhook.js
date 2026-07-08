@@ -391,6 +391,9 @@ async function processMessagingEvent(event, pageId, pageAccessToken) {
     const botAppId = process.env.FB_APP_ID ? String(process.env.FB_APP_ID) : null;
     const isHumanReply = botAppId ? appId !== botAppId : !appId || appId === PAGE_INBOX_APP_ID;
     const customerId = event.recipient?.id;
+    console.log(
+      `↩️ Echo received: app_id=${appId || 'none'}, FB_APP_ID=${botAppId || 'unset'}, human=${isHumanReply}`
+    );
     if (!isHumanReply || !customerId) return;
 
     // Dedup echo deliveries too, so redelivered events can't double-fire
