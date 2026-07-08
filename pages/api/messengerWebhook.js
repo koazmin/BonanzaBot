@@ -43,10 +43,10 @@ const HUMAN_TAKEOVER_HOURS = Number(process.env.HUMAN_TAKEOVER_HOURS || 6);
 const MESSAGE_CHAR_LIMIT = 1900;
 
 const QUICK_REPLIES = [
-  { content_type: 'text', title: 'ဈေးနှုန်းများ 💰', payload: 'QR_PRICES' },
-  { content_type: 'text', title: 'မော်ဒယ်ရွေးပေးပါ ⚖️', payload: 'QR_COMPARE' },
-  { content_type: 'text', title: 'အော်ဒါတင်နည်း 🛒', payload: 'QR_ORDER' },
-  { content_type: 'text', title: 'လူနဲ့ပြောမယ် 👤', payload: 'TALK_TO_HUMAN' },
+  { content_type: 'text', title: '💰 ဈေးနှုန်းများ', payload: 'QR_PRICES' },
+  { content_type: 'text', title: '📚 မော်ဒယ်ရွေးရန်', payload: 'QR_COMPARE' },
+  { content_type: 'text', title: '🛒 Order တင်မယ်', payload: 'QR_ORDER' },
+  { content_type: 'text', title: '👨‍💼 Admin နဲ့ပြောမယ်', payload: 'TALK_TO_HUMAN' },
 ];
 
 // ---------------------------------------------------------------------------
@@ -238,13 +238,13 @@ function formatOrderSummary(order, orderId, price) {
     ``,
     `Order နံပါတ်: ${orderId}`,
     `ပစ္စည်း: ${order.product} x ${order.quantity}`,
-    `ဈေးနှုန်း: ${price || 'တာဝန်ရှိသူမှ အတည်ပြုပေးပါမည်'}`,
+    `ဈေးနှုန်း: ${price || 'Admin မှ အတည်ပြုပေးပါမည်'}`,
     `အမည်: ${order.name}`,
     `ဖုန်း: ${order.phone}`,
     `လိပ်စာ: ${order.address}`,
     `ငွေချေနည်း: ${order.payment}`,
     ``,
-    `တာဝန်ရှိသူက မကြာခင် ဆက်သွယ်ပြီး အတည်ပြုပေးပါမယ်ခင်ဗျာ။ ကျေးဇူးတင်ပါတယ် 🙏`,
+    `Admin က မကြာခင် ဆက်သွယ်ပြီး အတည်ပြုပေးပါမယ်ခင်ဗျာ။ ကျေးဇူးတင်ပါတယ် 🙏`,
   ].join('\n');
 }
 
@@ -410,7 +410,7 @@ async function processMessagingEvent(event, pageId, pageAccessToken) {
     if (!alreadyPaused) {
       await sendMessage(
         customerId,
-        `👤 တာဝန်ရှိသူ ကိုယ်တိုင်ဝင်ရောက် ဖြေကြားပေးနေပါပြီခင်ဗျ။ Bot အလိုအလျောက်ဖြေကြားမှုကို ခေတ္တရပ်ထားပါတယ်။`,
+        `👨‍💼 Admin ဝင်ရောက်ဖြေကြားပေးနေပါပြီခင်ဗျ။ Bot အလိုအလျောက်ဖြေကြားမှုကို ခေတ္တရပ်ထားပါတယ်။`,
         pageAccessToken
       );
     }
@@ -436,12 +436,12 @@ async function processMessagingEvent(event, pageId, pageAccessToken) {
     }
   }
 
-  // Customer asked to talk to a human → pause the bot for this conversation
+  // Customer asked to talk to the admin → pause the bot for this conversation
   if (quickReplyPayload === 'TALK_TO_HUMAN') {
     await pauseConversation(pageId, senderId);
     await sendMessage(
       senderId,
-      'ဟုတ်ကဲ့ခင်ဗျ။ တာဝန်ရှိသူထံ လွှဲပြောင်းပေးလိုက်ပါပြီ။ သိချင်တာလေးတွေ ရေးထားခဲ့ပေးပါ — မကြာခင် လူကိုယ်တိုင် ပြန်လည်ဖြေကြားပေးပါမယ်ခင်ဗျာ။ 🙏',
+      '👨‍💼 ဟုတ်ကဲ့ခင်ဗျ။ Admin ထံ လွှဲပြောင်းပေးလိုက်ပါပြီ။ သိချင်တာလေးတွေ ရေးထားခဲ့ပေးပါ — Admin က မကြာခင် ကိုယ်တိုင်ပြန်လည် ဖြေကြားပေးပါမယ်ခင်ဗျာ။ 🙏',
       pageAccessToken
     );
     return;
