@@ -209,6 +209,26 @@ async function sendMessage(recipientId, message, pageAccessToken, { quickReplies
   }
 }
 
+function pageLabel(pageId) {
+  if (pageId === process.env.PAGE_ID_EREADER) return 'E-Reader Store';
+  if (pageId === process.env.PAGE_ID_GADGETS) return 'Gadgets Store';
+  return pageId;
+}
+
+// Customer display name for admin notifications (best effort)
+async function getUserName(psid, pageAccessToken) {
+  try {
+    const response = await fetch(
+      `https://graph.facebook.com/v19.0/${psid}?fields=first_name,last_name&access_token=${pageAccessToken}`
+    );
+    if (!response.ok) return null;
+    const data = await response.json();
+    return [data.first_name, data.last_name].filter(Boolean).join(' ') || null;
+  } catch {
+    return null;
+  }
+}
+
 // Notify the page admin about a new order. Uses a MESSAGE_TAG send so it works
 // outside the 24-hour messaging window (admin should still message the page
 // occasionally; the order is always in Notion regardless).
@@ -226,6 +246,29 @@ async function notifyAdmin(pageId, pageAccessToken, text) {
       message: { text: chunk },
     });
   }
+}
+
+// Escalation: pause the bot for this conversation and ping the admin to come
+// answer in the Page inbox. Used by the "Admin နဲ့ပြောမယ်" button and by the
+// [NOTIFY_ADMIN] tag Gemini emits for questions it can't handle.
+async function escalateToAdmin(pageId, pageAccessToken, senderId, question) {
+  await pauseConversation(pageId, senderId);
+  const name = await getUserName(senderId, pageAccessToken);
+  await notifyAdmin(
+    pageId,
+    pageAccessToken,
+    [
+      '🔔 Customer က Admin အကူအညီ လိုနေပါတယ်',
+      '',
+      `Page: ${pageLabel(pageId)}`,
+      `Customer: ${name || senderId}`,
+      question ? `မေးခွန်း: "${question}"` : null,
+      '',
+      `Page inbox ထဲမှာ ဝင်ဖြေပေးပါ။ ဒီစကားဝိုင်းအတွက် bot ကို ${HUMAN_TAKEOVER_HOURS} နာရီ ရပ်ထားပါပြီ။`,
+    ]
+      .filter((line) => line !== null)
+      .join('\n')
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -403,17 +446,9 @@ async function processMessagingEvent(event, pageId, pageAccessToken) {
       if (!firstTime) return;
     }
 
-    // Human reply from the Page inbox → pause this conversation; announce the takeover
-    // in the chat only on the first reply (not on every follow-up message)
-    const alreadyPaused = await isConversationPaused(pageId, customerId);
+    // Human reply from the Page inbox → silently pause the bot for this
+    // conversation so it doesn't talk over the admin (no visible notice)
     await pauseConversation(pageId, customerId);
-    if (!alreadyPaused) {
-      await sendMessage(
-        customerId,
-        `👨‍💼 Admin ဝင်ရောက်ဖြေကြားပေးနေပါပြီခင်ဗျ။ Bot အလိုအလျောက်ဖြေကြားမှုကို ခေတ္တရပ်ထားပါတယ်။`,
-        pageAccessToken
-      );
-    }
     console.log(`👤 Human takeover: paused ${customerId} for ${HUMAN_TAKEOVER_HOURS}h`);
     return;
   }
@@ -436,14 +471,14 @@ async function processMessagingEvent(event, pageId, pageAccessToken) {
     }
   }
 
-  // Customer asked to talk to the admin → pause the bot for this conversation
+  // Customer asked to talk to the admin → pause the bot and ping the admin
   if (quickReplyPayload === 'TALK_TO_HUMAN') {
-    await pauseConversation(pageId, senderId);
     await sendMessage(
       senderId,
-      '👨‍💼 ဟုတ်ကဲ့ခင်ဗျ။ Admin ထံ လွှဲပြောင်းပေးလိုက်ပါပြီ။ သိချင်တာလေးတွေ ရေးထားခဲ့ပေးပါ — Admin က မကြာခင် ကိုယ်တိုင်ပြန်လည် ဖြေကြားပေးပါမယ်ခင်ဗျာ။ 🙏',
+      '👨‍💼 ဟုတ်ကဲ့ခင်ဗျ။ Admin နဲ့ ပြောနိုင်အောင် စီစဉ်ပေးလိုက်ပါပြီ။ သိချင်တာလေးတွေ ရေးထားခဲ့ပေးပါ — Admin က မကြာခင် ပြန်လည်ဖြေကြားပေးပါမယ်ခင်ဗျာ။ 🙏',
       pageAccessToken
     );
+    await escalateToAdmin(pageId, pageAccessToken, senderId, 'Admin နဲ့ပြောမယ် ခလုတ်နှိပ်ထားပါတယ်');
     return;
   }
 
@@ -529,6 +564,7 @@ async function processMessagingEvent(event, pageId, pageAccessToken) {
 
   let reply;
   let order = null;
+  let escalate = false;
   try {
     const result = await askGemini({
       question,
@@ -541,6 +577,15 @@ async function processMessagingEvent(event, pageId, pageAccessToken) {
     const parsed = parseOrderBlock(result.reply);
     reply = parsed.cleanReply || result.reply;
     order = parsed.order;
+    // [NOTIFY_ADMIN] = Gemini says this needs a human → strip tag, escalate
+    if (reply.includes('[NOTIFY_ADMIN]')) {
+      escalate = true;
+      reply = reply.replace(/\[NOTIFY_ADMIN\]/g, '').trim();
+      if (!reply) {
+        reply =
+          'ဒီကိစ္စလေးကတော့ Admin နဲ့ ပြောနိုင်အောင် စီစဉ်ပေးပါမယ်ခင်ဗျာ။ ခဏလေးစောင့်ပေးပါခင်ဗျာ 🙏';
+      }
+    }
   } catch (error) {
     console.error('❗ Gemini error:', error);
     reply = error.status === 503 || error.status === 429 ? BUSY_MESSAGE : NETWORK_ERROR_MESSAGE;
@@ -548,6 +593,11 @@ async function processMessagingEvent(event, pageId, pageAccessToken) {
 
   // Send to Messenger first so a Notion error can't block the customer's reply
   await sendMessage(senderId, reply, pageAccessToken, { quickReplies: QUICK_REPLIES });
+
+  // Bot flagged this as needing a human → pause the conversation + noti admin
+  if (escalate) {
+    await escalateToAdmin(pageId, pageAccessToken, senderId, question);
+  }
 
   // Customer confirmed an order → save to Notion, confirm to customer, noti admin
   if (order && ordersEnabled()) {
