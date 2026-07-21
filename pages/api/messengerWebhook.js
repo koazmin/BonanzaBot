@@ -229,9 +229,11 @@ async function getUserName(psid, pageAccessToken) {
   }
 }
 
-// Notify the page admin about a new order. Uses a MESSAGE_TAG send so it works
-// outside the 24-hour messaging window (admin should still message the page
-// occasionally; the order is always in Notion regardless).
+// Notify the page admin. Sent as a normal RESPONSE message — Facebook has
+// deprecated MESSAGE_TAG sends, so this only delivers while the admin's own
+// 24-hour messaging window with the page is open. Keep the window open by
+// messaging the page occasionally (e.g. pausebot/resumebot); every order is
+// always in Notion regardless.
 async function notifyAdmin(pageId, pageAccessToken, text) {
   const adminPsid = adminPsids[pageId];
   if (!adminPsid) {
@@ -241,8 +243,7 @@ async function notifyAdmin(pageId, pageAccessToken, text) {
   for (const chunk of splitMessage(text)) {
     await callSendAPI(pageAccessToken, {
       recipient: { id: adminPsid },
-      messaging_type: 'MESSAGE_TAG',
-      tag: 'ACCOUNT_UPDATE',
+      messaging_type: 'RESPONSE',
       message: { text: chunk },
     });
   }
