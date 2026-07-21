@@ -461,6 +461,10 @@ async function processMessagingEvent(event, pageId, pageAccessToken) {
   const attachments = event.message?.attachments;
   const mid = event.message?.mid;
 
+  console.log(
+    `📩 Message from ${senderId}: "${(messageText || '(no text)').slice(0, 60)}" mid=${mid || 'none'}`
+  );
+
   // Deduplicate: Facebook redelivers events when the webhook responds slowly.
   // Claiming the mid exactly once prevents duplicate replies to the customer.
   if (mid) {
@@ -573,10 +577,12 @@ async function processMessagingEvent(event, pageId, pageAccessToken) {
       channel: 'messenger',
       extraContext: orderContext,
     });
-    // Strip the machine-readable [ORDER] block before the customer sees it
+    // Strip the machine-readable [ORDER] block before the customer sees it.
+    // If the model emitted ONLY the block (no visible text), never fall back
+    // to the raw reply — the customer would see the JSON.
     const parsed = parseOrderBlock(result.reply);
-    reply = parsed.cleanReply || result.reply;
     order = parsed.order;
+    reply = parsed.cleanReply || (order ? 'ကျေးဇူးတင်ပါတယ်ခင်ဗျာ။' : result.reply);
     // [NOTIFY_ADMIN] = Gemini says this needs a human → strip tag, escalate
     if (reply.includes('[NOTIFY_ADMIN]')) {
       escalate = true;
