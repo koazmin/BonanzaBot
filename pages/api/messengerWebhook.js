@@ -512,6 +512,9 @@ async function processMessagingEvent(event, pageId, pageAccessToken) {
     }
     if (messageText?.toLowerCase() === 'resumebot') {
       await setGlobalPause(false);
+      // Also clear the admin's own conversation pause (their chat can get
+      // paused by takeover logic while testing)
+      await resumeConversation(pageId, senderId);
       await sendMessage(
         senderId,
         '🤖 Bot တစ်ခုလုံး ပြန်ဖွင့်လိုက်ပါပြီ။ အလိုအလျောက်ဖြေကြားမှုများ ပြန်လည်စတင်ပါပြီ။',
@@ -536,8 +539,12 @@ async function processMessagingEvent(event, pageId, pageAccessToken) {
     return;
   }
 
-  // Paused per-conversation by human takeover → stay quiet
-  if (await isConversationPaused(pageId, senderId)) return;
+  // Paused per-conversation by human takeover → stay quiet (log it so silent
+  // skips are visible when debugging)
+  if (await isConversationPaused(pageId, senderId)) {
+    console.log(`⏸ Conversation ${senderId} is paused (human takeover) — skipping`);
+    return;
+  }
 
   // Download any photos the customer sent so Gemini can look at them
   const images = await downloadImages(attachments);
