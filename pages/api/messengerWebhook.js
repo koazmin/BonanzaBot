@@ -39,6 +39,11 @@ const PAGE_INBOX_APP_ID = '263902037430900';
 // How long the bot stays quiet for a conversation after a human takes over
 const HUMAN_TAKEOVER_HOURS = Number(process.env.HUMAN_TAKEOVER_HOURS || 6);
 
+// Smart resume: once the human has been idle in a conversation this long,
+// the bot takes over again on the customer's next message (instead of
+// staying silent for the full HUMAN_TAKEOVER_HOURS).
+const HUMAN_IDLE_RESUME_MINUTES = Number(process.env.HUMAN_IDLE_RESUME_MINUTES || 60);
+
 // Messenger hard limit is 2000 chars per message; keep a safety margin
 const MESSAGE_CHAR_LIMIT = 1900;
 
@@ -135,8 +140,15 @@ function pauseKey(pageId, userId) {
   return `paused:${pageId}:${userId}`;
 }
 
+function lastHumanKey(pageId, userId) {
+  return `lastHuman:${pageId}:${userId}`;
+}
+
 async function pauseConversation(pageId, userId) {
   await kvSet(pauseKey(pageId, userId), '1', HUMAN_TAKEOVER_HOURS * 3600);
+  // Track when the human was last active so the bot can smart-resume once
+  // the human has gone idle
+  await kvSet(lastHumanKey(pageId, userId), String(Date.now()), HUMAN_TAKEOVER_HOURS * 3600);
 }
 
 async function resumeConversation(pageId, userId) {
@@ -540,11 +552,23 @@ async function processMessagingEvent(event, pageId, pageAccessToken) {
     return;
   }
 
-  // Paused per-conversation by human takeover → stay quiet (log it so silent
-  // skips are visible when debugging)
+  // Paused per-conversation by human takeover. Stay quiet while the human is
+  // actively handling the chat, but smart-resume once the human has been idle
+  // for HUMAN_IDLE_RESUME_MINUTES — so conversations never stay dead for the
+  // full takeover window.
   if (await isConversationPaused(pageId, senderId)) {
-    console.log(`⏸ Conversation ${senderId} is paused (human takeover) — skipping`);
-    return;
+    const lastHuman = Number(await kvGet(lastHumanKey(pageId, senderId))) || 0;
+    const idleMinutes = lastHuman ? (Date.now() - lastHuman) / 60000 : Infinity;
+    if (idleMinutes < HUMAN_IDLE_RESUME_MINUTES) {
+      console.log(
+        `⏸ Conversation ${senderId} is paused (human active ${Math.round(idleMinutes)}min ago) — skipping`
+      );
+      return;
+    }
+    await resumeConversation(pageId, senderId);
+    console.log(
+      `▶️ Auto-resumed ${senderId}: human idle for ${Math.round(idleMinutes)}min`
+    );
   }
 
   // Download any photos the customer sent so Gemini can look at them
