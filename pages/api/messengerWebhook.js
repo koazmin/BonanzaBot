@@ -452,6 +452,20 @@ async function processMessagingEvent(event, pageId, pageAccessToken) {
     );
     if (!isHumanReply || !customerId) return;
 
+    // Facebook's built-in Instant Reply / Away Message automations also arrive
+    // as inbox-app echoes — they must NOT count as a human takeover, or every
+    // new customer gets silenced the moment the auto-greeting fires.
+    const echoText = event.message.text || '';
+    const ignorePatterns = [
+      'thanks for messaging us',
+      "we'll get back to you",
+      ...(process.env.ECHO_IGNORE_TEXTS || '').split('|').filter(Boolean),
+    ];
+    if (echoText && ignorePatterns.some((p) => echoText.toLowerCase().includes(p.toLowerCase()))) {
+      console.log(`🤖 Built-in auto-reply echo ignored (no takeover): "${echoText.slice(0, 50)}"`);
+      return;
+    }
+
     // Dedup echo deliveries too, so redelivered events can't double-fire
     const echoMid = event.message.mid;
     if (echoMid) {
