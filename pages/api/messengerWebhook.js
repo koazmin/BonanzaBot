@@ -9,6 +9,8 @@ import {
   generateOrderId,
   createOrderInNotion,
   getLatestOrderForUser,
+  appendOrderNote,
+  checkOrderStatusUpdates,
 } from '../../lib/orders';
 
 // Raw body is needed to verify Facebook's X-Hub-Signature-256 header
@@ -286,6 +288,67 @@ async function escalateToAdmin(pageId, pageAccessToken, senderId, question, { pa
       .filter((line) => line !== null)
       .join('\n')
   );
+}
+
+// Payment slip: attach to the customer's latest order in Notion and alert the
+// admin — forwarding the slip image itself so it can be verified from Messenger.
+async function handlePaymentSlip(pageId, pageAccessToken, senderId, slipUrl) {
+  const name = await getUserName(senderId, pageAccessToken);
+  const latest = ordersEnabled() ? await getLatestOrderForUser(senderId) : null;
+  const timestamp = new Date().toLocaleString('en-US', { timeZone: 'Asia/Yangon' });
+
+  if (latest?.notionPageId) {
+    try {
+      await appendOrderNote(
+        latest.notionPageId,
+        `💳 Payment slip received ${timestamp}${slipUrl ? `\n${slipUrl}` : ''}`
+      );
+    } catch (err) {
+      console.error('❗ Slip note append failed:', err.message);
+    }
+  }
+
+  await notifyAdmin(
+    pageId,
+    pageAccessToken,
+    [
+      '💳 ငွေလွှဲပြေစာ ရောက်ပါပြီ',
+      '',
+      `Page: ${pageLabel(pageId)}`,
+      `Customer: ${name || senderId}`,
+      latest
+        ? `Order: ${latest.orderId} (${latest.product} x ${latest.quantity}) — Status: ${latest.status}`
+        : 'Order: မတွေ့ပါ (order မတင်ရသေးသူ ဖြစ်နိုင်သည်)',
+      '',
+      'စစ်ဆေးပြီး Notion မှာ Status → Confirmed ပြောင်းပေးပါ — customer ဆီ အတည်ပြုစာ အလိုအလျောက် ရောက်သွားပါမယ်။',
+    ].join('\n')
+  );
+
+  const adminPsid = adminPsids[pageId];
+  if (adminPsid && slipUrl) {
+    await callSendAPI(pageAccessToken, {
+      recipient: { id: adminPsid },
+      messaging_type: 'RESPONSE',
+      message: { attachment: { type: 'image', payload: { url: slipUrl, is_reusable: false } } },
+    });
+  }
+}
+
+// Throttled order-status sweep: at most once per 5 minutes across all
+// instances (KV lock), run on incoming webhook traffic so customers get
+// Confirmed/Shipped/Delivered messages soon after the admin updates Notion.
+async function maybeCheckOrderStatuses() {
+  if (!ordersEnabled()) return;
+  try {
+    const claimed = await kvSetIfNotExists('orderStatusCheckLock', '1', 300);
+    if (!claimed) return;
+    await checkOrderStatusUpdates(async (orderPageId, senderId, text) => {
+      const token = pageTokens[orderPageId];
+      if (token) await sendMessage(senderId, text, token);
+    });
+  } catch (err) {
+    console.error('❗ Order status sweep error:', err.message);
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -591,7 +654,9 @@ async function processMessagingEvent(event, pageId, pageAccessToken) {
     );
   }
 
-  // Download any photos the customer sent so Gemini can look at them
+  // Download any photos the customer sent so Gemini can look at them.
+  // Keep the first image's CDN URL — used when it turns out to be a payment slip.
+  const firstImageUrl = attachments?.find((a) => a.type === 'image')?.payload?.url || null;
   const images = await downloadImages(attachments);
 
   if (!messageText && images.length === 0) {
@@ -621,6 +686,7 @@ async function processMessagingEvent(event, pageId, pageAccessToken) {
   let reply;
   let order = null;
   let escalate = false;
+  let paymentSlip = false;
   try {
     const result = await askGemini({
       question,
@@ -644,6 +710,16 @@ async function processMessagingEvent(event, pageId, pageAccessToken) {
           'ဒီကိစ္စလေးကတော့ Admin နဲ့ ပြောနိုင်အောင် စီစဉ်ပေးပါမယ်ခင်ဗျာ။ ခဏလေးစောင့်ပေးပါခင်ဗျာ 🙏';
       }
     }
+    // [PAYMENT_SLIP] = the customer's image is a payment slip → strip tag,
+    // attach to their order and alert the admin
+    if (reply.includes('[PAYMENT_SLIP]')) {
+      paymentSlip = images.length > 0;
+      reply = reply.replace(/\[PAYMENT_SLIP\]/g, '').trim();
+      if (!reply) {
+        reply =
+          'ငွေလွှဲပြေစာ လက်ခံရရှိပါပြီခင်ဗျ။ Admin က စစ်ဆေးအတည်ပြုပြီး ပြန်လည်အကြောင်းကြားပေးပါမယ်ခင်ဗျာ။ 🙏';
+      }
+    }
   } catch (error) {
     console.error('❗ Gemini error:', error);
     reply = error.status === 503 || error.status === 429 ? BUSY_MESSAGE : NETWORK_ERROR_MESSAGE;
@@ -655,6 +731,11 @@ async function processMessagingEvent(event, pageId, pageAccessToken) {
   // Bot flagged this as needing a human → pause the conversation + noti admin
   if (escalate) {
     await escalateToAdmin(pageId, pageAccessToken, senderId, question);
+  }
+
+  // Payment slip received → attach to the latest order, alert admin with the image
+  if (paymentSlip) {
+    await handlePaymentSlip(pageId, pageAccessToken, senderId, firstImageUrl);
   }
 
   // Customer confirmed an order → save to Notion, confirm to customer, noti admin
@@ -730,6 +811,9 @@ export default async function handler(req, res) {
       }
     }
   }
+
+  // Piggyback: sweep for order status changes (throttled to once per 5 min)
+  await maybeCheckOrderStatuses();
 
   return res.status(200).send('EVENT_RECEIVED');
 }
