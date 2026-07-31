@@ -261,11 +261,13 @@ async function notifyAdmin(pageId, pageAccessToken, text) {
   }
 }
 
-// Escalation: pause the bot for this conversation and ping the admin to come
-// answer in the Page inbox. Used by the "Admin နဲ့ပြောမယ်" button and by the
-// [NOTIFY_ADMIN] tag Gemini emits for questions it can't handle.
-async function escalateToAdmin(pageId, pageAccessToken, senderId, question) {
-  await pauseConversation(pageId, senderId);
+// Escalation: ping the admin to come answer in the Page inbox. Used by the
+// "Admin နဲ့ပြောမယ်" button (pause: true — the customer explicitly asked for a
+// human, so the bot steps aside) and by the [NOTIFY_ADMIN] tag Gemini emits
+// (pause: false — the bot keeps answering follow-up questions; a real takeover
+// pause still happens automatically as soon as the admin replies from inbox).
+async function escalateToAdmin(pageId, pageAccessToken, senderId, question, { pause = false } = {}) {
+  if (pause) await pauseConversation(pageId, senderId);
   const name = await getUserName(senderId, pageAccessToken);
   await notifyAdmin(
     pageId,
@@ -277,7 +279,9 @@ async function escalateToAdmin(pageId, pageAccessToken, senderId, question) {
       `Customer: ${name || senderId}`,
       question ? `မေးခွန်း: "${question}"` : null,
       '',
-      `Page inbox ထဲမှာ ဝင်ဖြေပေးပါ။ ဒီစကားဝိုင်းအတွက် bot ကို ${HUMAN_TAKEOVER_HOURS} နာရီ ရပ်ထားပါပြီ။`,
+      pause
+        ? `Page inbox ထဲမှာ ဝင်ဖြေပေးပါ။ ဒီစကားဝိုင်းအတွက် bot ကို ရပ်ထားပါပြီ။`
+        : `Page inbox ထဲမှာ ဝင်ဖြေပေးပါ။ Bot ကတော့ customer ၏ အခြားမေးခွန်းများကို ဆက်ဖြေနေပါမည်။`,
     ]
       .filter((line) => line !== null)
       .join('\n')
@@ -509,7 +513,9 @@ async function processMessagingEvent(event, pageId, pageAccessToken) {
       '👨‍💼 ဟုတ်ကဲ့ခင်ဗျ။ Admin နဲ့ ပြောနိုင်အောင် စီစဉ်ပေးလိုက်ပါပြီ။ သိချင်တာလေးတွေ ရေးထားခဲ့ပေးပါ — Admin က မကြာခင် ပြန်လည်ဖြေကြားပေးပါမယ်ခင်ဗျာ။ 🙏',
       pageAccessToken
     );
-    await escalateToAdmin(pageId, pageAccessToken, senderId, 'Admin နဲ့ပြောမယ် ခလုတ်နှိပ်ထားပါတယ်');
+    await escalateToAdmin(pageId, pageAccessToken, senderId, 'Admin နဲ့ပြောမယ် ခလုတ်နှိပ်ထားပါတယ်', {
+      pause: true,
+    });
     return;
   }
 
